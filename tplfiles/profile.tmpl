@@ -1,0 +1,10 @@
+{{define "content"}}
+<div class="profile">
+  <p>profile:</p>
+  {{block "user_content" .}}
+  A username: {{.Name}}
+  {{end}}
+  {{template "widgets" .}}
+  {{template "modal/overlay" .}}
+</div>
+{{end}}

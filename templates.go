@@ -1,0 +1,149 @@
+package templates
+
+import (
+	"fmt"
+	"html/template"
+	"io"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+type Templates struct {
+	root         string
+	ext          string
+	layoutFolder string
+	sharedFolder string
+	funcMap      template.FuncMap
+}
+
+func NewTemplates(root, ext string, funcMap template.FuncMap) *Templates {
+	t := new(Templates)
+	t.root = root
+	t.ext = ext
+	if ext[0] != '.' {
+		t.ext = "." + ext
+	}
+	t.funcMap = funcMap
+
+	t.layoutFolder = filepath.Join(t.root, "layouts")
+	t.sharedFolder = filepath.Join(t.root, "shared")
+	return t
+}
+
+func (t *Templates) parse(layout, name string) (*template.Template, error) {
+	layoutFleName := filepath.Join(t.layoutFolder, layout+t.ext)
+	templateName := filepath.Join(t.root, name+t.ext)
+
+	tpl, err := t.parseFiles(nil, t.readFileOS, layoutFleName, templateName)
+	if err != nil {
+		return nil, err
+	}
+	filenames, err := t.findFiles(t.sharedFolder, t.ext)
+	if err != nil {
+		return nil, err
+	}
+
+	return t.parseFiles(tpl, t.readFileOS, filenames...)
+}
+
+func (t *Templates) render(out io.Writer, layout, name string, data any) error {
+	tpl, err := t.parse(layout, name)
+	if err != nil {
+		return err
+	}
+
+	return tpl.Execute(out, data)
+}
+
+// findFiles
+func (t *Templates) findFiles(root, ext string) (filenames []string, err error) {
+
+	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		} else if d.IsDir() {
+			return nil
+		}
+
+		if strings.HasSuffix(path, ext) {
+			filenames = append(filenames, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(filenames) == 0 {
+		return nil, fmt.Errorf("no file found in: %#q", root)
+	}
+
+	return filenames, nil
+}
+
+type readFileFunc func(string) (string, []byte, error)
+
+// parseFiles (adapted from stdlib)
+func (t *Templates) parseFiles(tpl *template.Template, readFile readFileFunc, filenames ...string) (*template.Template, error) {
+	if len(filenames) == 0 {
+		// Not really a problem, but be consistent.
+		return nil, fmt.Errorf("html/template: no files named in call to ParseFiles")
+	}
+	for _, filename := range filenames {
+		name, b, err := readFile(filename)
+
+		if err != nil {
+			return nil, err
+		}
+		s := string(b)
+		// First template becomes return value if not already defined,
+		// and we use that one for subsequent New calls to associate
+		// all the templates together. Also, if this file has the same name
+		// as t, this file becomes the contents of t, so
+		//  t, err := New(name).Funcs(xxx).ParseFiles(name)
+		// works. Otherwise we create a new template associated with t.
+		var tmpl *template.Template
+		if tpl == nil {
+			tpl = template.New(name)
+			tpl.Funcs(t.funcMap)
+		}
+		if name == tpl.Name() {
+			tmpl = tpl
+		} else {
+			tmpl = tpl.New(name)
+		}
+		_, err = tmpl.Parse(s)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return tpl, nil
+}
+
+func (t *Templates) stripFileName(name string) string {
+	name = strings.TrimPrefix(name, t.sharedFolder)
+	name = strings.TrimSuffix(name, t.ext)
+
+	if name[0] == '/' {
+		name = name[1:]
+	}
+	return name
+}
+
+// readFileOS  (adapted from stdlib)
+func (t *Templates) readFileOS(file string) (name string, b []byte, err error) {
+	name = t.stripFileName(file)
+	b, err = os.ReadFile(file)
+	return
+}
+
+// readFileFS  (borrowed from stdlib)
+func (t *Templates) readFileFS(fsys fs.FS) func(string) (string, []byte, error) {
+	return func(file string) (name string, b []byte, err error) {
+		name = t.stripFileName(file)
+		b, err = fs.ReadFile(fsys, file)
+		return
+	}
+}
