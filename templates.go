@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"io"
@@ -65,6 +66,49 @@ func (t *Templates) Render(out io.Writer, layout, name string, data any) error {
 	}
 
 	return tpl.Execute(out, data)
+}
+
+func (t *Templates) String(layout, src string, data any) (string, error) {
+	var (
+		err error
+		tpl *template.Template
+	)
+
+	if layout != "" {
+		layoutFleName := filepath.Join(t.layoutFolder, layout+t.ext)
+		tpl, err = t.parseFiles(nil, t.readFileOS, layoutFleName)
+		if err != nil {
+			return "", err
+		}
+
+		tpl, err = tpl.Parse(src)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		tpl, err = template.New("").Funcs(t.funcMap).Parse(src)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	filenames, err := t.findFiles(t.sharedFolder, t.ext)
+	if err != nil {
+		return "", err
+	}
+
+	tpl, err = t.parseFiles(tpl, t.readFileOS, filenames...)
+	if err != nil {
+		return "", err
+	}
+
+	out := bytes.NewBufferString("")
+	err = tpl.Execute(out, data)
+	if err != nil {
+		return "", err
+	}
+
+	return out.String(), nil
 }
 
 func (t *Templates) isFolder(name string) bool {

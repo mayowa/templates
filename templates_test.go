@@ -82,3 +82,40 @@ func Test__templateFolder(t *testing.T) {
 		buff.String())
 
 }
+
+func TestStringWithLayout(t *testing.T) {
+	var err error
+	tpl := NewTemplates("./testData", "tmpl", fm)
+
+	out := ""
+	d := struct{ Name string }{Name: "philippta"}
+	out, err = tpl.String("string", `
+		{{define "string"}}
+			a string block
+			{{template "modal/overlay"}}
+		{{end}}
+	`, d)
+	require.NoError(t, err)
+	assert.Equal(t,
+		"string layout\n\t\t\ta string block\n\t\t\tYou cant see me!\n\t\t",
+		out)
+
+}
+func TestStringWithoutLayout(t *testing.T) {
+	var err error
+	tpl := NewTemplates("./testData", "tmpl", fm)
+
+	out := ""
+	d := struct{ Name string }{Name: "philippta"}
+	out, err = tpl.String("", `
+		the index
+		{{- block "content" .}}
+			a string block
+		{{end -}}
+	`, d)
+	require.NoError(t, err)
+	assert.Equal(t,
+		"\n\t\tthe index\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
+		out)
+
+}
