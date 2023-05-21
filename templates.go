@@ -15,7 +15,6 @@ import (
 type Templates struct {
 	root         string
 	ext          string
-	layoutFolder string
 	sharedFolder string
 	funcMap      template.FuncMap
 
@@ -34,7 +33,6 @@ func NewTemplates(root, ext string, funcMap template.FuncMap) *Templates {
 	t.funcMap = funcMap
 	t.cache = make(map[string]*template.Template)
 
-	t.layoutFolder = filepath.Join(t.root, "layouts")
 	t.sharedFolder = filepath.Join(t.root, "shared")
 	return t
 }
@@ -75,7 +73,7 @@ func (t *Templates) String(layout, src string, data any) (string, error) {
 	)
 
 	if layout != "" {
-		layoutFleName := filepath.Join(t.layoutFolder, layout+t.ext)
+		layoutFleName := filepath.Join(t.root, layout+t.ext)
 		tpl, err = t.parseFiles(nil, t.readFileOS, layoutFleName)
 		if err != nil {
 			return "", err
@@ -122,7 +120,7 @@ func (t *Templates) isFolder(name string) bool {
 }
 
 func (t *Templates) parse(layout, name string) (*template.Template, error) {
-	layoutFleName := filepath.Join(t.layoutFolder, layout+t.ext)
+	layoutFleName := filepath.Join(t.root, layout+t.ext)
 	templateName := filepath.Join(t.root, name+t.ext)
 
 	var files []string

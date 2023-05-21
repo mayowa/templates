@@ -19,7 +19,6 @@ func TestNewTemplates(t *testing.T) {
 	tpl := NewTemplates("./testData", "tmpl", fm)
 	assert.Equal(t, tpl.root, "./testData")
 	assert.Equal(t, ".tmpl", tpl.ext)
-	assert.Equal(t, "testData/layouts", tpl.layoutFolder)
 	assert.Equal(t, "testData/shared", tpl.sharedFolder)
 
 	buff := bytes.NewBuffer(nil)
@@ -90,7 +89,7 @@ func TestStringWithLayout(t *testing.T) {
 	out := ""
 	d := struct{ Name string }{Name: "philippta"}
 	out, err = tpl.String("string", `
-		{{define "string"}}
+		{{define "main"}}
 			a string block
 			{{template "modal/overlay"}}
 		{{end}}
