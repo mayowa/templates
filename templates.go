@@ -32,11 +32,37 @@ func NewTemplates(root, ext string, funcMap template.FuncMap) *Templates {
 	return t
 }
 
+func (t *Templates) isFolder(name string) bool {
+	templateName := filepath.Join(t.root, name)
+	fi, err := os.Stat(templateName)
+	if err != nil {
+		return false
+	}
+
+	return fi.Mode().IsDir()
+}
+
 func (t *Templates) parse(layout, name string) (*template.Template, error) {
 	layoutFleName := filepath.Join(t.layoutFolder, layout+t.ext)
 	templateName := filepath.Join(t.root, name+t.ext)
 
-	tpl, err := t.parseFiles(nil, t.readFileOS, layoutFleName, templateName)
+	var files []string
+	if layout != "" {
+		files = append(files, layoutFleName)
+	}
+
+	if t.isFolder(name) {
+		filenames, err := t.findFiles(filepath.Join(t.root, name), t.ext)
+		if err != nil {
+			return nil, err
+		}
+		t.sortBlockFiles(name, filenames)
+		files = append(files, filenames...)
+	} else {
+		files = append(files, templateName)
+	}
+
+	tpl, err := t.parseFiles(nil, t.readFileOS, files...)
 	if err != nil {
 		return nil, err
 	}
@@ -48,6 +74,33 @@ func (t *Templates) parse(layout, name string) (*template.Template, error) {
 	return t.parseFiles(tpl, t.readFileOS, filenames...)
 }
 
+func (t *Templates) sortBlockFiles(blockName string, files []string) {
+	// put the file with the same name as the block first
+	idx := -1
+	for i, fle := range files {
+		fle, _ = filepath.Abs(fle)
+		fle = strings.TrimSuffix(fle, t.ext)
+		if fle == blockName {
+			idx = i
+			break
+		}
+	}
+
+	if idx == -1 {
+		return
+	}
+	files[0], files[idx] = files[idx], files[0]
+}
+
+func findIndex(slice []string, item string) int {
+	for i, s := range slice {
+		if s == item {
+			return i
+		}
+	}
+
+	return -1
+}
 func (t *Templates) render(out io.Writer, layout, name string, data any) error {
 	tpl, err := t.parse(layout, name)
 	if err != nil {
@@ -123,7 +176,11 @@ func (t *Templates) parseFiles(tpl *template.Template, readFile readFileFunc, fi
 }
 
 func (t *Templates) stripFileName(name string) string {
-	name = strings.TrimPrefix(name, t.sharedFolder)
+	if strings.HasPrefix(name, t.sharedFolder) {
+		name = strings.TrimPrefix(name, t.sharedFolder)
+	} else {
+		name = strings.TrimPrefix(name, filepath.Clean(t.root))
+	}
 	name = strings.TrimSuffix(name, t.ext)
 
 	if name[0] == '/' {
