@@ -10,10 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var fm = template.FuncMap{
+	"upper": strings.ToUpper,
+}
+
 func TestNewTemplates(t *testing.T) {
-	fm := template.FuncMap{
-		"upper": strings.ToUpper,
-	}
 
 	tpl := NewTemplates("./testData", "tmpl", fm)
 	assert.Equal(t, tpl.root, "./testData")
@@ -23,7 +24,7 @@ func TestNewTemplates(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err := tpl.render(buff, "base", "profile", d)
+	err := tpl.Render(buff, "base", "profile", d)
 	require.NoError(t, err)
 	assert.Equal(t,
 		"base layout\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
@@ -31,15 +32,30 @@ func TestNewTemplates(t *testing.T) {
 
 }
 
-func Test__noTemplate(t *testing.T) {
-	fm := template.FuncMap{
-		"upper": strings.ToUpper,
-	}
+func Test_templateCache(t *testing.T) {
+
 	tpl := NewTemplates("./testData", "tmpl", fm)
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err := tpl.render(buff, "", "info", d)
+	err := tpl.Render(buff, "base", "profile", d)
+	require.NoError(t, err)
+	assert.Contains(t, tpl.cache, "base-profile")
+
+	tpl = NewTemplates("./testData", "tmpl", fm)
+	tpl.Debug = true
+	err = tpl.Render(buff, "base", "profile", d)
+	require.NoError(t, err)
+	assert.NotContains(t, tpl.cache, "base-profile")
+}
+
+func Test__noTemplate(t *testing.T) {
+
+	tpl := NewTemplates("./testData", "tmpl", fm)
+
+	buff := bytes.NewBuffer(nil)
+	d := struct{ Name string }{Name: "philippta"}
+	err := tpl.Render(buff, "", "info", d)
 	require.NoError(t, err)
 	assert.Equal(t, "make I tell you something...\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n", buff.String())
 
@@ -47,21 +63,19 @@ func Test__noTemplate(t *testing.T) {
 
 func Test__templateFolder(t *testing.T) {
 	var err error
-	fm := template.FuncMap{
-		"upper": strings.ToUpper,
-	}
+
 	tpl := NewTemplates("./testData", "tmpl", fm)
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.render(buff, "cast", "block", d)
+	err = tpl.Render(buff, "cast", "block", d)
 	require.NoError(t, err)
 	assert.Equal(t,
 		"cast layout\n\t\t<div>overlay</div>\n    a fragment\n    \n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n\n",
 		buff.String())
 
 	buff.Reset()
-	err = tpl.render(buff, "", "block", d)
+	err = tpl.Render(buff, "", "block", d)
 	require.NoError(t, err)
 	assert.Equal(t,
 		"the index\n\t\t<div>overlay</div>\n    a fragment\n    \n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n\n",

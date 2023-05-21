@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 type Templates struct {
@@ -16,6 +17,10 @@ type Templates struct {
 	layoutFolder string
 	sharedFolder string
 	funcMap      template.FuncMap
+
+	cache map[string]*template.Template
+	mtx   sync.RWMutex
+	Debug bool
 }
 
 func NewTemplates(root, ext string, funcMap template.FuncMap) *Templates {
@@ -26,10 +31,40 @@ func NewTemplates(root, ext string, funcMap template.FuncMap) *Templates {
 		t.ext = "." + ext
 	}
 	t.funcMap = funcMap
+	t.cache = make(map[string]*template.Template)
 
 	t.layoutFolder = filepath.Join(t.root, "layouts")
 	t.sharedFolder = filepath.Join(t.root, "shared")
 	return t
+}
+
+func (t *Templates) Render(out io.Writer, layout, name string, data any) error {
+	var (
+		err   error
+		found bool
+		tpl   *template.Template
+	)
+
+	if !t.Debug {
+		t.mtx.RLock()
+		tpl, found = t.cache[layout+"-"+name]
+		t.mtx.RUnlock()
+	}
+
+	if !found {
+		tpl, err = t.parse(layout, name)
+		if err != nil {
+			return err
+		}
+
+		if !t.Debug {
+			t.mtx.Lock()
+			t.cache[layout+"-"+name] = tpl
+			t.mtx.Unlock()
+		}
+	}
+
+	return tpl.Execute(out, data)
 }
 
 func (t *Templates) isFolder(name string) bool {
@@ -90,24 +125,6 @@ func (t *Templates) sortBlockFiles(blockName string, files []string) {
 		return
 	}
 	files[0], files[idx] = files[idx], files[0]
-}
-
-func findIndex(slice []string, item string) int {
-	for i, s := range slice {
-		if s == item {
-			return i
-		}
-	}
-
-	return -1
-}
-func (t *Templates) render(out io.Writer, layout, name string, data any) error {
-	tpl, err := t.parse(layout, name)
-	if err != nil {
-		return err
-	}
-
-	return tpl.Execute(out, data)
 }
 
 // findFiles
