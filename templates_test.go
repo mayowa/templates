@@ -89,6 +89,9 @@ func TestStringWithLayout(t *testing.T) {
 	out := ""
 	d := struct{ Name string }{Name: "philippta"}
 	out, err = tpl.String("string", `
+	
+		{{define "another"}}one{{end}}
+	
 		{{define "main"}}
 			a string block
 			{{template "modal/overlay"}}
