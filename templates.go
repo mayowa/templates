@@ -12,7 +12,7 @@ import (
 	"sync"
 )
 
-type Templates struct {
+type Template struct {
 	root         string
 	ext          string
 	sharedFolder string
@@ -23,8 +23,8 @@ type Templates struct {
 	Debug bool
 }
 
-func New(root, ext string, funcMap template.FuncMap) *Templates {
-	t := new(Templates)
+func New(root, ext string, funcMap template.FuncMap) *Template {
+	t := new(Template)
 	t.root = root
 	t.ext = ext
 	if ext[0] != '.' {
@@ -37,7 +37,7 @@ func New(root, ext string, funcMap template.FuncMap) *Templates {
 	return t
 }
 
-func (t *Templates) Render(out io.Writer, layout, name string, data any) error {
+func (t *Template) Render(out io.Writer, layout, name string, data any) error {
 	var (
 		err   error
 		found bool
@@ -66,7 +66,7 @@ func (t *Templates) Render(out io.Writer, layout, name string, data any) error {
 	return tpl.Execute(out, data)
 }
 
-func (t *Templates) String(layout, src string, data any) (string, error) {
+func (t *Template) String(layout, src string, data any) (string, error) {
 	var (
 		err error
 		tpl *template.Template
@@ -109,7 +109,7 @@ func (t *Templates) String(layout, src string, data any) (string, error) {
 	return out.String(), nil
 }
 
-func (t *Templates) isFolder(name string) bool {
+func (t *Template) isFolder(name string) bool {
 	templateName := filepath.Join(t.root, name)
 	fi, err := os.Stat(templateName)
 	if err != nil {
@@ -119,7 +119,7 @@ func (t *Templates) isFolder(name string) bool {
 	return fi.Mode().IsDir()
 }
 
-func (t *Templates) parse(layout, name string) (*template.Template, error) {
+func (t *Template) parse(layout, name string) (*template.Template, error) {
 	layoutFleName := filepath.Join(t.root, layout+t.ext)
 	templateName := filepath.Join(t.root, name+t.ext)
 
@@ -151,7 +151,7 @@ func (t *Templates) parse(layout, name string) (*template.Template, error) {
 	return t.parseFiles(tpl, t.readFileOS, filenames...)
 }
 
-func (t *Templates) sortBlockFiles(blockName string, files []string) {
+func (t *Template) sortBlockFiles(blockName string, files []string) {
 	// put the file with the same name as the block first
 	idx := -1
 	for i, fle := range files {
@@ -170,7 +170,7 @@ func (t *Templates) sortBlockFiles(blockName string, files []string) {
 }
 
 // findFiles
-func (t *Templates) findFiles(root, ext string) (filenames []string, err error) {
+func (t *Template) findFiles(root, ext string) (filenames []string, err error) {
 
 	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -198,7 +198,7 @@ func (t *Templates) findFiles(root, ext string) (filenames []string, err error) 
 type readFileFunc func(string) (string, []byte, error)
 
 // parseFiles (adapted from stdlib)
-func (t *Templates) parseFiles(tpl *template.Template, readFile readFileFunc, filenames ...string) (*template.Template, error) {
+func (t *Template) parseFiles(tpl *template.Template, readFile readFileFunc, filenames ...string) (*template.Template, error) {
 	if len(filenames) == 0 {
 		// Not really a problem, but be consistent.
 		return nil, fmt.Errorf("html/template: no files named in call to ParseFiles")
@@ -234,7 +234,7 @@ func (t *Templates) parseFiles(tpl *template.Template, readFile readFileFunc, fi
 	return tpl, nil
 }
 
-func (t *Templates) stripFileName(name string) string {
+func (t *Template) stripFileName(name string) string {
 	if strings.HasPrefix(name, t.sharedFolder) {
 		name = strings.TrimPrefix(name, t.sharedFolder)
 	} else {
@@ -249,14 +249,14 @@ func (t *Templates) stripFileName(name string) string {
 }
 
 // readFileOS  (adapted from stdlib)
-func (t *Templates) readFileOS(file string) (name string, b []byte, err error) {
+func (t *Template) readFileOS(file string) (name string, b []byte, err error) {
 	name = t.stripFileName(file)
 	b, err = os.ReadFile(file)
 	return
 }
 
 // readFileFS  (borrowed from stdlib)
-func (t *Templates) readFileFS(fsys fs.FS) func(string) (string, []byte, error) {
+func (t *Template) readFileFS(fsys fs.FS) func(string) (string, []byte, error) {
 	return func(file string) (name string, b []byte, err error) {
 		name = t.stripFileName(file)
 		b, err = fs.ReadFile(fsys, file)
