@@ -23,7 +23,7 @@ type Templates struct {
 	Debug bool
 }
 
-func NewTemplates(root, ext string, funcMap template.FuncMap) *Templates {
+func New(root, ext string, funcMap template.FuncMap) *Templates {
 	t := new(Templates)
 	t.root = root
 	t.ext = ext

@@ -16,7 +16,7 @@ var fm = template.FuncMap{
 
 func TestNewTemplates(t *testing.T) {
 
-	tpl := NewTemplates("./testData", "tmpl", fm)
+	tpl := New("./testData", "tmpl", fm)
 	assert.Equal(t, tpl.root, "./testData")
 	assert.Equal(t, ".tmpl", tpl.ext)
 	assert.Equal(t, "testData/shared", tpl.sharedFolder)
@@ -33,7 +33,7 @@ func TestNewTemplates(t *testing.T) {
 
 func Test_templateCache(t *testing.T) {
 
-	tpl := NewTemplates("./testData", "tmpl", fm)
+	tpl := New("./testData", "tmpl", fm)
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
@@ -41,7 +41,7 @@ func Test_templateCache(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, tpl.cache, "base-profile")
 
-	tpl = NewTemplates("./testData", "tmpl", fm)
+	tpl = New("./testData", "tmpl", fm)
 	tpl.Debug = true
 	err = tpl.Render(buff, "base", "profile", d)
 	require.NoError(t, err)
@@ -50,7 +50,7 @@ func Test_templateCache(t *testing.T) {
 
 func Test__noTemplate(t *testing.T) {
 
-	tpl := NewTemplates("./testData", "tmpl", fm)
+	tpl := New("./testData", "tmpl", fm)
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
@@ -63,7 +63,7 @@ func Test__noTemplate(t *testing.T) {
 func Test__templateFolder(t *testing.T) {
 	var err error
 
-	tpl := NewTemplates("./testData", "tmpl", fm)
+	tpl := New("./testData", "tmpl", fm)
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
@@ -84,7 +84,7 @@ func Test__templateFolder(t *testing.T) {
 
 func TestStringWithLayout(t *testing.T) {
 	var err error
-	tpl := NewTemplates("./testData", "tmpl", fm)
+	tpl := New("./testData", "tmpl", fm)
 
 	out := ""
 	d := struct{ Name string }{Name: "philippta"}
@@ -105,7 +105,7 @@ func TestStringWithLayout(t *testing.T) {
 }
 func TestStringWithoutLayout(t *testing.T) {
 	var err error
-	tpl := NewTemplates("./testData", "tmpl", fm)
+	tpl := New("./testData", "tmpl", fm)
 
 	out := ""
 	d := struct{ Name string }{Name: "philippta"}
