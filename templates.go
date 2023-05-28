@@ -46,7 +46,7 @@ func (t *Template) Render(out io.Writer, layout, name string, data any) error {
 
 	if !t.Debug {
 		t.mtx.RLock()
-		tpl, found = t.cache[layout+"-"+name]
+		tpl, found = t.cache[name]
 		t.mtx.RUnlock()
 	}
 
@@ -56,14 +56,27 @@ func (t *Template) Render(out io.Writer, layout, name string, data any) error {
 			return err
 		}
 
-		if !t.Debug {
-			t.mtx.Lock()
-			t.cache[layout+"-"+name] = tpl
-			t.mtx.Unlock()
-		}
+		t.mtx.Lock()
+		t.cache[name] = tpl
+		t.mtx.Unlock()
 	}
 
 	return tpl.Execute(out, data)
+}
+
+func (t *Template) Exists(name string) bool {
+	var (
+		found bool
+	)
+
+	t.mtx.RLock()
+	_, found = t.cache[name]
+	t.mtx.RUnlock()
+	if found {
+		return true
+	}
+
+	return false
 }
 
 func (t *Template) String(layout, src string, data any) (string, error) {

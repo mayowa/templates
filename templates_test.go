@@ -39,13 +39,13 @@ func Test_templateCache(t *testing.T) {
 	d := struct{ Name string }{Name: "philippta"}
 	err := tpl.Render(buff, "base", "profile", d)
 	require.NoError(t, err)
-	assert.Contains(t, tpl.cache, "base-profile")
+	assert.Contains(t, tpl.cache, "profile")
 
 	tpl = New("./testData", "tmpl", fm)
 	tpl.Debug = true
 	err = tpl.Render(buff, "base", "profile", d)
 	require.NoError(t, err)
-	assert.NotContains(t, tpl.cache, "base-profile")
+	assert.Contains(t, tpl.cache, "profile")
 }
 
 func Test__noTemplate(t *testing.T) {
@@ -74,6 +74,7 @@ func Test__templateFolder(t *testing.T) {
 		buff.String())
 
 	buff.Reset()
+	tpl.Debug = true
 	err = tpl.Render(buff, "", "block", d)
 	require.NoError(t, err)
 	assert.Equal(t,
@@ -120,4 +121,16 @@ func TestStringWithoutLayout(t *testing.T) {
 		"\n\t\tthe index\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
 		out)
 
+}
+
+func TestTemplate_Lookup(t *testing.T) {
+	var err error
+
+	tpl := New("./testData", "tmpl", fm)
+
+	buff := bytes.NewBuffer(nil)
+	d := struct{ Name string }{Name: "philippta"}
+	err = tpl.Render(buff, "cast", "block", d)
+	require.NoError(t, err)
+	assert.True(t, tpl.Exists("block"))
 }
