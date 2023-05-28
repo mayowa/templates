@@ -16,7 +16,7 @@ type Template struct {
 	root         string
 	ext          string
 	sharedFolder string
-	funcMap      template.FuncMap
+	FuncMap      template.FuncMap
 
 	cache map[string]*template.Template
 	mtx   sync.RWMutex
@@ -30,7 +30,7 @@ func New(root, ext string, funcMap template.FuncMap) *Template {
 	if ext[0] != '.' {
 		t.ext = "." + ext
 	}
-	t.funcMap = funcMap
+	t.FuncMap = funcMap
 	t.cache = make(map[string]*template.Template)
 
 	t.sharedFolder = filepath.Join(t.root, "shared")
@@ -97,7 +97,7 @@ func (t *Template) String(layout, src string, data any) (string, error) {
 			return "", err
 		}
 	} else {
-		tpl, err = template.New("").Funcs(t.funcMap).Parse(src)
+		tpl, err = template.New("").Funcs(t.FuncMap).Parse(src)
 		if err != nil {
 			return "", err
 		}
@@ -232,7 +232,7 @@ func (t *Template) parseFiles(tpl *template.Template, readFile readFileFunc, fil
 		var tmpl *template.Template
 		if tpl == nil {
 			tpl = template.New(name)
-			tpl.Funcs(t.funcMap)
+			tpl.Funcs(t.FuncMap)
 		}
 		if name == tpl.Name() {
 			tmpl = tpl
