@@ -16,14 +16,15 @@ var fm = template.FuncMap{
 
 func TestNewTemplates(t *testing.T) {
 
-	tpl := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", "tmpl", fm)
+	require.NoError(t, err)
 	assert.Equal(t, tpl.root, "./testData")
 	assert.Equal(t, ".tmpl", tpl.ext)
 	assert.Equal(t, "testData/shared", tpl.sharedFolder)
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err := tpl.Render(buff, "base", "profile", d)
+	err = tpl.Render(buff, "base", "profile", d)
 	require.NoError(t, err)
 	assert.Equal(t,
 		"base layout\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
@@ -33,15 +34,18 @@ func TestNewTemplates(t *testing.T) {
 
 func Test_templateCache(t *testing.T) {
 
-	tpl := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", "tmpl", fm)
+	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err := tpl.Render(buff, "base", "profile", d)
+	err = tpl.Render(buff, "base", "profile", d)
 	require.NoError(t, err)
 	assert.Contains(t, tpl.cache, "profile")
 
-	tpl = New("./testData", "tmpl", fm)
+	tpl, err = New("./testData", "tmpl", fm)
+	require.NoError(t, err)
+
 	tpl.Debug = true
 	err = tpl.Render(buff, "base", "profile", d)
 	require.NoError(t, err)
@@ -50,11 +54,14 @@ func Test_templateCache(t *testing.T) {
 
 func Test__noTemplate(t *testing.T) {
 
-	tpl := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", "tmpl", fm)
+	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err := tpl.Render(buff, "", "info", d)
+	err = tpl.Render(buff, "", "info", d)
+	require.NoError(t, err)
+
 	require.NoError(t, err)
 	assert.Equal(t, "make I tell you something...\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n", buff.String())
 
@@ -63,7 +70,8 @@ func Test__noTemplate(t *testing.T) {
 func Test__templateFolder(t *testing.T) {
 	var err error
 
-	tpl := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", "tmpl", fm)
+	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
@@ -85,7 +93,8 @@ func Test__templateFolder(t *testing.T) {
 
 func TestStringWithLayout(t *testing.T) {
 	var err error
-	tpl := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", "tmpl", fm)
+	require.NoError(t, err)
 
 	out := ""
 	d := struct{ Name string }{Name: "philippta"}
@@ -106,7 +115,8 @@ func TestStringWithLayout(t *testing.T) {
 }
 func TestStringWithoutLayout(t *testing.T) {
 	var err error
-	tpl := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", "tmpl", fm)
+	require.NoError(t, err)
 
 	out := ""
 	d := struct{ Name string }{Name: "philippta"}
@@ -126,7 +136,8 @@ func TestStringWithoutLayout(t *testing.T) {
 func TestTemplate_Lookup(t *testing.T) {
 	var err error
 
-	tpl := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", "tmpl", fm)
+	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}

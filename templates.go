@@ -18,12 +18,13 @@ type Template struct {
 	sharedFolder string
 	FuncMap      template.FuncMap
 
-	cache map[string]*template.Template
-	mtx   sync.RWMutex
-	Debug bool
+	cache  map[string]*template.Template
+	mtx    sync.RWMutex
+	Debug  bool
+	Shared *template.Template
 }
 
-func New(root, ext string, funcMap template.FuncMap) *Template {
+func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 	t := new(Template)
 	t.root = root
 	t.ext = ext
@@ -34,7 +35,31 @@ func New(root, ext string, funcMap template.FuncMap) *Template {
 	t.cache = make(map[string]*template.Template)
 
 	t.sharedFolder = filepath.Join(t.root, "shared")
-	return t
+	if err := t.init(); err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+func (t *Template) init() error {
+	filenames, err := t.findFiles(t.sharedFolder, t.ext)
+	if err != nil {
+		return err
+	}
+
+	tpl, err := template.New("shared").Funcs(t.FuncMap).Parse("")
+	if err != nil {
+		return err
+	}
+
+	tpl, err = t.parseFiles(tpl, t.readFileOS, filenames...)
+	if err != nil {
+		return err
+	}
+
+	t.Shared = tpl
+	return nil
 }
 
 func (t *Template) Render(out io.Writer, layout, name string, data any) error {
