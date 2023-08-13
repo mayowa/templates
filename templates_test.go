@@ -91,6 +91,20 @@ func Test__templateFolder(t *testing.T) {
 
 }
 
+func Test__templateInsideAFolder(t *testing.T) {
+	var err error
+
+	tpl, err := New("./testData", "tmpl", fm)
+	require.NoError(t, err)
+
+	buff := bytes.NewBuffer(nil)
+	err = tpl.Render(buff, "", "block/fragment", nil)
+	require.NoError(t, err)
+	assert.Equal(t,
+		"a fragment", buff.String())
+
+}
+
 func TestStringWithLayout(t *testing.T) {
 	var err error
 	tpl, err := New("./testData", "tmpl", fm)

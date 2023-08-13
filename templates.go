@@ -2,6 +2,7 @@ package templates
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -63,6 +64,10 @@ func (t *Template) init() error {
 }
 
 func (t *Template) Render(out io.Writer, layout, name string, data any) error {
+	return t.RenderFiles(out, data, layout, name)
+}
+
+func (t *Template) RenderFiles(out io.Writer, data any, layout, name string, others ...string) error {
 	var (
 		err   error
 		found bool
@@ -76,7 +81,8 @@ func (t *Template) Render(out io.Writer, layout, name string, data any) error {
 	}
 
 	if !found {
-		tpl, err = t.parse(layout, name)
+		others = append([]string{name}, others...)
+		tpl, err = t.parse(layout, others...)
 		if err != nil {
 			return err
 		}
@@ -88,7 +94,6 @@ func (t *Template) Render(out io.Writer, layout, name string, data any) error {
 
 	return tpl.Execute(out, data)
 }
-
 func (t *Template) Exists(name string) bool {
 	var (
 		found bool
@@ -157,7 +162,16 @@ func (t *Template) isFolder(name string) bool {
 	return fi.Mode().IsDir()
 }
 
-func (t *Template) parse(layout, name string) (*template.Template, error) {
+func (t *Template) parse(layout string, names ...string) (*template.Template, error) {
+	if len(names) == 0 {
+		return nil, errors.New("templates not specified")
+	}
+
+	name := names[0]
+	if len(names) > 1 {
+		names = names[1:]
+	}
+
 	layoutFleName := filepath.Join(t.root, layout+t.ext)
 	templateName := filepath.Join(t.root, name+t.ext)
 
