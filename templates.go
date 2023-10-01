@@ -44,22 +44,6 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 }
 
 func (t *Template) init() error {
-	filenames, err := t.findFiles(t.sharedFolder, t.ext)
-	if err != nil {
-		return err
-	}
-
-	tpl, err := template.New("shared").Funcs(t.FuncMap).Parse("")
-	if err != nil {
-		return err
-	}
-
-	tpl, err = t.parseFiles(tpl, t.readFileOS, filenames...)
-	if err != nil {
-		return err
-	}
-
-	t.Shared = tpl
 	return nil
 }
 
@@ -133,14 +117,15 @@ func (t *Template) String(layout, src string, data any) (string, error) {
 		}
 	}
 
-	filenames, err := t.findFiles(t.sharedFolder, t.ext)
+	filenames, _ := t.findFiles(t.sharedFolder, t.ext)
 	if err != nil {
 		return "", err
 	}
 
-	tpl, err = t.parseFiles(tpl, t.readFileOS, filenames...)
-	if err != nil {
-		return "", err
+	if len(filenames) > 0 {
+		if tpl, err = t.parseFiles(tpl, t.readFileOS, filenames...); err != nil {
+			return "", err
+		}
 	}
 
 	out := bytes.NewBufferString("")
@@ -160,6 +145,15 @@ func (t *Template) isFolder(name string) bool {
 	}
 
 	return fi.Mode().IsDir()
+}
+
+func (t *Template) pathExists(name string) bool {
+	_, err := os.Stat(name)
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 func (t *Template) parse(layout string, names ...string) (*template.Template, error) {
@@ -195,12 +189,12 @@ func (t *Template) parse(layout string, names ...string) (*template.Template, er
 	if err != nil {
 		return nil, err
 	}
-	filenames, err := t.findFiles(t.sharedFolder, t.ext)
-	if err != nil {
-		return nil, err
+	filenames, _ := t.findFiles(t.sharedFolder, t.ext)
+	if len(filenames) > 0 {
+		return t.parseFiles(tpl, t.readFileOS, filenames...)
 	}
 
-	return t.parseFiles(tpl, t.readFileOS, filenames...)
+	return tpl, nil
 }
 
 func (t *Template) sortBlockFiles(blockName string, files []string) {
