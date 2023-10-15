@@ -23,8 +23,13 @@ func findNextTag(content []byte) (*tag, error) {
 	if err != nil {
 		return nil, err
 	}
-	if t == nil || t.selfClosing {
+	if t == nil {
 		return nil, nil
+	}
+
+	if t.selfClosing {
+		t.loc = []int{t.loc[0], t.loc[1]}
+		return t, nil
 	}
 
 	var blockEnd int

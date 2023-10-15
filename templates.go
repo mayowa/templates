@@ -19,13 +19,14 @@ type Template struct {
 	sharedFolder string
 	FuncMap      template.FuncMap
 
-	cache  map[string]*template.Template
-	mtx    sync.RWMutex
-	Debug  bool
-	Shared *template.Template
+	cache      map[string]*template.Template
+	mtx        sync.RWMutex
+	Debug      bool
+	components *template.Template
 }
 
 func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
+	var err error
 	t := new(Template)
 	t.root = root
 	t.ext = ext
@@ -40,6 +41,14 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 		return nil, err
 	}
 
+	// components templates
+	componentsFolder := filepath.Join(t.root, "components")
+	if t.isFolder(componentsFolder) {
+		t.components, err = template.ParseGlob(componentsFolder + "/*." + t.ext)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return t, nil
 }
 
@@ -251,10 +260,14 @@ func (t *Template) parseFiles(tpl *template.Template, readFile readFileFunc, fil
 	}
 	for _, filename := range filenames {
 		name, b, err := readFile(filename)
-
 		if err != nil {
 			return nil, err
 		}
+
+		if err := t.processComponentsInTemplate(&b); err != nil {
+			return nil, err
+		}
+
 		s := string(b)
 		// First template becomes return value if not already defined,
 		// and we use that one for subsequent New calls to associate
