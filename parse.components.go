@@ -8,14 +8,14 @@ import (
 
 var reTagHead = regexp.MustCompile(`<([A-Z][a-z-]+) *([\w\W]*?) *>`)
 var reTagEnd = regexp.MustCompile(`</([A-Z][a-z-]+)>`)
-var reTagArg = regexp.MustCompile(`([\w\-]+) *= *["|']([\w\W\s]*?\b)["|']`)
+var reTagArg = regexp.MustCompile(`([\w\-]+) *= *["|']([\w\W\s]*?)["|']`)
 
 type tag struct {
 	loc         []int
-	name        string
-	args        map[string]string
-	body        string
-	selfClosing bool
+	Name        string
+	Args        map[string]string
+	Body        string
+	SelfClosing bool
 }
 
 func findNextTag(content []byte) (*tag, error) {
@@ -27,13 +27,13 @@ func findNextTag(content []byte) (*tag, error) {
 		return nil, nil
 	}
 
-	if t.selfClosing {
+	if t.SelfClosing {
 		t.loc = []int{t.loc[0], t.loc[1]}
 		return t, nil
 	}
 
 	var blockEnd int
-	t.body, blockEnd, err = getBody(t.name, content[t.loc[1]:])
+	t.Body, blockEnd, err = getBody(t.Name, content[t.loc[1]:])
 	if err != nil {
 		return nil, err
 	}
@@ -50,15 +50,15 @@ func findTagHead(content []byte) (*tag, error) {
 
 	t := new(tag)
 	t.loc = loc
-	t.name = string(content[loc[2]:loc[3]])
+	t.Name = string(content[loc[2]:loc[3]])
 	if len(loc) > 4 {
 		args := string(content[loc[4]:loc[5]])
-		t.args = parseArgs(args)
+		t.Args = parseArgs(args)
 	}
 
 	head := string(content[loc[0]:loc[1]])
 	if strings.HasSuffix(head, "/>") {
-		t.selfClosing = true
+		t.SelfClosing = true
 	}
 
 	return t, nil

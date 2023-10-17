@@ -127,6 +127,7 @@ func TestStringWithLayout(t *testing.T) {
 		out)
 
 }
+
 func TestStringWithoutLayout(t *testing.T) {
 	var err error
 	tpl, err := New("./testData", "tmpl", fm)
@@ -171,4 +172,14 @@ func TestTemplate_NoShared(t *testing.T) {
 	err = tpl.Render(buff, "", "solo", d)
 	require.NoError(t, err)
 	assert.Equal(t, "philippta, This is solo act!", buff.String())
+}
+
+func Test_Components(t *testing.T) {
+	tpl, err := New("./testData", "tmpl", fm)
+	require.NoError(t, err)
+
+	buff := bytes.NewBuffer(nil)
+	err = tpl.Render(buff, "", "comp-demo", nil)
+	require.NoError(t, err)
+	t.Log(buff.String())
 }

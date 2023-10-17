@@ -41,10 +41,12 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 		return nil, err
 	}
 
+	t.FuncMap["html"] = func(v string) template.HTML { return template.HTML(v) }
+
 	// components templates
-	componentsFolder := filepath.Join(t.root, "components")
+	componentsFolder := "components"
 	if t.isFolder(componentsFolder) {
-		t.components, err = template.ParseGlob(componentsFolder + "/*." + t.ext)
+		t.components, err = template.New("").Funcs(t.FuncMap).ParseGlob(filepath.Join(t.root, componentsFolder) + "/*" + t.ext)
 		if err != nil {
 			return nil, err
 		}
@@ -146,6 +148,7 @@ func (t *Template) String(layout, src string, data any) (string, error) {
 	return out.String(), nil
 }
 
+// isFolder checks if a folder exists in the template folder
 func (t *Template) isFolder(name string) bool {
 	templateName := filepath.Join(t.root, name)
 	fi, err := os.Stat(templateName)
