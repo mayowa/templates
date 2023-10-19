@@ -10,7 +10,7 @@ var reTagHead = regexp.MustCompile(`<([A-Z][a-z-]+) *([\w\W]*?) *>`)
 var reTagEnd = regexp.MustCompile(`</([A-Z][a-z-]+)>`)
 var reTagArg = regexp.MustCompile(`([\w\-]+) *= *["|']([\w\W\s]*?)["|']`)
 
-type tag struct {
+type Tag struct {
 	loc         []int
 	Name        string
 	Args        map[string]string
@@ -18,7 +18,7 @@ type tag struct {
 	SelfClosing bool
 }
 
-func findNextTag(content []byte) (*tag, error) {
+func findNextTag(content []byte) (*Tag, error) {
 	t, err := findTagHead(content)
 	if err != nil {
 		return nil, err
@@ -42,13 +42,13 @@ func findNextTag(content []byte) (*tag, error) {
 	return t, nil
 }
 
-func findTagHead(content []byte) (*tag, error) {
+func findTagHead(content []byte) (*Tag, error) {
 	loc := reTagHead.FindSubmatchIndex(content)
 	if loc == nil {
 		return nil, nil
 	}
 
-	t := new(tag)
+	t := new(Tag)
 	t.loc = loc
 	t.Name = string(content[loc[2]:loc[3]])
 	if len(loc) > 4 {

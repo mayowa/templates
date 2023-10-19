@@ -4,10 +4,15 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+
+	"github.com/mayowa/templates"
 )
 
 type Scanner struct {
-	r *bufio.Reader
+	r        *bufio.Reader
+	position int
+	line     int
+	lastCh   rune
 }
 
 func NewScanner(r io.Reader) *Scanner {
@@ -15,19 +20,62 @@ func NewScanner(r io.Reader) *Scanner {
 }
 
 func (s *Scanner) read() rune {
-	ch, _, err := s.r.ReadRune()
+	var err error
+	s.lastCh, _, err = s.r.ReadRune()
 	if err != nil {
 		return eof
 	}
+	if s.lastCh == '\n' {
+		s.line++
+	}
 
-	return ch
+	s.position++
+	return s.lastCh
 }
 
 func (s *Scanner) unread() {
 	_ = s.r.UnreadRune()
+	s.position--
+	if s.lastCh == '\n' {
+		s.line--
+	}
+}
+func (s *Scanner) newTokenItem(token Token, literal string) *TokenItem {
+	ti := &TokenItem{
+		Token:    token,
+		Literal:  literal,
+		Position: s.position,
+		Line:     s.line,
+	}
+
+	return ti
 }
 
-func (s *Scanner) Scan() (tok Token, lit string) {
+func (s *Scanner) FindTagHead() *templates.Tag {
+	// look for tag
+	found := false
+	for {
+		tkItem := s.Scan()
+		if tkItem.Token == EOF {
+			break
+		} else if tkItem.Token == TagStart {
+			s.unread()
+			found = true
+			break
+		}
+	}
+
+	tag := new(templates.Tag)
+	if !found {
+		return nil
+	}
+
+	// Todo: populate tag
+
+	return tag
+}
+
+func (s *Scanner) Scan() *TokenItem {
 	// Read the next rune.
 	ch := s.read()
 
@@ -44,25 +92,44 @@ func (s *Scanner) Scan() (tok Token, lit string) {
 	// Otherwise read the individual character.
 	switch ch {
 	case eof:
-		return EOF, ""
+		return s.newTokenItem(EOF, "")
 	case '<':
-		return LT, string(ch)
+		nextCh := s.read()
+		if isUpperCaseLetter(nextCh) {
+			// look for TagStart "<X"
+			s.unread()
+			return s.newTokenItem(TagStart, string(ch))
+		} else if nextCh == '/' {
+			// look for start ClosingTag "</X"
+			nextCh = s.read()
+			if isUpperCaseLetter(nextCh) {
+				s.unread()
+				return s.newTokenItem(ClosingTagStart, "</")
+			}
+		}
+
+		return s.newTokenItem(LeftAngleBracket, string(ch))
+	case '/':
+		nextCh := s.read()
+		if nextCh == '>' {
+			return s.newTokenItem(TagSelfClosing, "/>")
+		}
 	case '>':
-		return GT, string(ch)
+		return s.newTokenItem(RightAngleBracket, string(ch))
 	case '=':
-		return ASSIGN, string(ch)
+		return s.newTokenItem(Assign, string(ch))
 	case '\'':
-		return SingleQuote, string(ch)
+		return s.newTokenItem(SingleQuote, string(ch))
 	case '"':
-		return DoubleQuote, string(ch)
+		return s.newTokenItem(DoubleQuote, string(ch))
 	case '`':
-		return TripleQuote, string(ch)
+		return s.newTokenItem(TripleQuote, string(ch))
 	}
 
-	return OTHER, string(ch)
+	return s.newTokenItem(Other, string(ch))
 }
 
-func (s *Scanner) scanWhitespace() (tok Token, lit string) {
+func (s *Scanner) scanWhitespace() *TokenItem {
 	// Create a buffer and read the current character into it.
 	var buf bytes.Buffer
 	buf.WriteRune(s.read())
@@ -80,10 +147,10 @@ func (s *Scanner) scanWhitespace() (tok Token, lit string) {
 		}
 	}
 
-	return WHITESPACE, buf.String()
+	return s.newTokenItem(Whitespace, buf.String())
 }
 
-func (s *Scanner) scanIdentifier() (tok Token, lit string) {
+func (s *Scanner) scanIdentifier() *TokenItem {
 	// Create a buffer and read the current character into it.
 	var buf bytes.Buffer
 	buf.WriteRune(s.read())
@@ -101,7 +168,7 @@ func (s *Scanner) scanIdentifier() (tok Token, lit string) {
 		}
 	}
 
-	return IDENTIFIER, buf.String()
+	return s.newTokenItem(Identifier, buf.String())
 }
 
 func (s *Scanner) isTagStart(ch rune) bool {

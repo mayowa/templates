@@ -5,27 +5,40 @@ var eof = rune(0)
 type Token int
 
 const (
-	OTHER Token = iota - 1
+	Other Token = iota - 1
 	EOF
-	WHITESPACE
-	IDENTIFIER
-	ASSIGN
-	SLASH
-	LT
-	GT
+	NewLine
+	Whitespace
+	Identifier
+	Assign
+	Slash
+	LeftAngleBracket
+	RightAngleBracket
 	SingleQuote
 	DoubleQuote
 	TripleQuote
+	TagStart
+	TagSelfClosing
+	ClosingTagStart
 )
 
 var TokenLiterals = map[Token]string{
-	ASSIGN:      "=",
-	SLASH:       "/",
-	LT:          "<",
-	GT:          ">",
-	SingleQuote: "'",
-	DoubleQuote: "\"",
-	TripleQuote: "`",
+	Assign:            "=",
+	Slash:             "/",
+	LeftAngleBracket:  "<",
+	RightAngleBracket: ">",
+	SingleQuote:       "'",
+	DoubleQuote:       "\"",
+	TripleQuote:       "`",
+	ClosingTagStart:   "</",
+	TagSelfClosing:    "/>",
+}
+
+type TokenItem struct {
+	Token    Token
+	Literal  string
+	Position int
+	Line     int
 }
 
 func getTokenLiteral(token Token) string {
@@ -35,4 +48,14 @@ func getTokenLiteral(token Token) string {
 	}
 
 	return lt
+}
+
+func NewTokenItem(token Token, literal string, position int) *TokenItem {
+	ti := &TokenItem{
+		Token:    token,
+		Literal:  literal,
+		Position: position,
+	}
+
+	return ti
 }
