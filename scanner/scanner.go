@@ -52,8 +52,11 @@ func (s *Scanner) newTokenItem(token Token, literal string) *TokenItem {
 	return ti
 }
 
-func (s *Scanner) FindTagHead() (*templates.Tag, error) {
-	var tkItem *TokenItem
+func (s *Scanner) ParseTagHead() (*templates.Tag, error) {
+	var (
+		tkItem *TokenItem
+		err    error
+	)
 	// look for tag start
 	for {
 		tkItem = s.Scan()
@@ -77,34 +80,143 @@ func (s *Scanner) FindTagHead() (*templates.Tag, error) {
 	}
 	tag.Name = tkItem.Literal
 
-	// next comes the args if any
-	argTokens, lastToken := s.ScanUntil(RightAngleBracket)
-	if lastToken.Token == EOF {
-		return nil, fmt.Errorf("closing bracket '>' not found for tag at line %d", lastToken.Line)
+	// parse args if any
+	tag.Args, err = s.parseArgs(RightAngleBracket)
+	if err != nil {
+		return nil, err
 	}
-
-	// todo: parse argTokens
 
 	return tag, nil
 }
 
-func (s *Scanner) ScanUntil(token Token) ([]*TokenItem, *TokenItem) {
-	var (
-		items  []*TokenItem
-		tkItem *TokenItem
-	)
+func (s *Scanner) ParseTagArgs() (map[string]string, error) {
 
-	for {
-		tkItem = s.Scan()
-		if tkItem.Token == EOF {
-			break
-		} else if tkItem.Token == token {
-			break
-		}
-		items = append(items, tkItem)
+	args, err := s.parseArgs(EOF)
+	if err != nil {
+		return nil, err
 	}
 
-	return items, tkItem
+	return args, nil
+}
+
+func (s *Scanner) parseArgs(until Token) (map[string]string, error) {
+	// Identifier [WS] = "|'[WS, Word, Other] "|'
+	// name="mayo" class="{{ if eq .Name "mayo" }}123{{end}}"
+	// Identifier, Assign, DoubleQuote, Identifier, DoubleQuote, WhiteSpace
+
+	var (
+		wrkItems []*TokenItem
+		item     *TokenItem
+		args     = map[string]string{}
+		err      error
+	)
+	tokens, lastTokenItem := s.ScanUntil(until, false)
+	if lastTokenItem.Token == until {
+		return nil, fmt.Errorf("closing token %s not found on line %d", until, lastTokenItem.Line)
+	}
+
+	for len(wrkItems) > 0 {
+		// Identifier
+		item, wrkItems = trimWhiteSpace(tokens)
+		if item.Token != Identifier {
+			return nil, fmt.Errorf("expected %s, found %s", Identifier, item.Token)
+		}
+		name := item.Literal
+
+		// Assign
+		item, wrkItems = trimWhiteSpace(wrkItems)
+		if item.Token != Assign {
+			return nil, fmt.Errorf("expected %s, found %s", Assign, item.Token)
+		}
+
+		// String
+		var strItems []*TokenItem
+		strItems, wrkItems, err = extractString(wrkItems)
+		if err != nil {
+			return nil, err
+		}
+
+		args[name] = concatItems(strItems)
+	}
+
+	return args, nil
+}
+
+func concatItems(items []*TokenItem) string {
+	str := ""
+	for _, i := range items {
+		str += i.Literal
+	}
+
+	return str
+}
+
+func extractString(tokens []*TokenItem) ([]*TokenItem, []*TokenItem, error) {
+	// Single or Double Quote
+	item, wrkItems := trimWhiteSpace(tokens)
+	if item.Token != SingleQuote && item.Token != DoubleQuote {
+		return nil, nil, fmt.Errorf("expected %s or %s, found %s", SingleQuote, DoubleQuote, item.Token)
+	}
+
+	stringStart := item.Token
+	nested := 0
+	var out []*TokenItem
+	for len(wrkItems) > 0 {
+		item, wrkItems = pop(wrkItems)
+		if item.Token == stringStart {
+			nested++
+		}
+		out = append(out, item)
+	}
+
+	if nested%2 != 0 {
+		return nil, nil, fmt.Errorf("unterminated string")
+	}
+
+	return out, wrkItems, nil
+}
+
+func trimWhiteSpace(tokens []*TokenItem) (*TokenItem, []*TokenItem) {
+	itm, tokens := pop(tokens)
+	if itm.Token == WhiteSpace {
+		itm, tokens = pop(tokens)
+	}
+
+	return itm, tokens
+}
+
+func pop[T any](stack []T) (T, []T) {
+	top := stack[0]
+	stack = stack[1:]
+	return top, stack
+}
+
+func (s *Scanner) ScanUntil(token Token, withPeek bool) (items []*TokenItem, lastItem *TokenItem) {
+	var (
+		oldPosition int
+	)
+
+	if withPeek {
+		oldPosition = s.position
+	}
+
+	for {
+		lastItem = s.Scan()
+		if lastItem.Token == EOF {
+			break
+		} else if lastItem.Token == token {
+			break
+		}
+		items = append(items, lastItem)
+	}
+
+	if withPeek {
+		for i := s.position; i > oldPosition; i-- {
+			s.unread()
+		}
+	}
+
+	return items, lastItem
 }
 
 func (s *Scanner) Scan() *TokenItem {
@@ -179,7 +291,7 @@ func (s *Scanner) scanWhitespace() *TokenItem {
 		}
 	}
 
-	return s.newTokenItem(Whitespace, buf.String())
+	return s.newTokenItem(WhiteSpace, buf.String())
 }
 
 func (s *Scanner) scanIdentifier() *TokenItem {

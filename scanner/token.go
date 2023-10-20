@@ -5,11 +5,15 @@ var eof = rune(0)
 type Token int
 
 const (
-	Other Token = iota - 1
+	None Token = iota - 1
 	EOF
+	Other
 	NewLine
-	Whitespace
+	WhiteSpace
+	// Identifier matches [a-ZA-Z0-9-]
 	Identifier
+	// String matches "|'[\w\W\s]"|'
+	String
 	Assign
 	Slash
 	LeftAngleBracket
@@ -21,6 +25,47 @@ const (
 	TagSelfClosing
 	ClosingTagStart
 )
+
+func (t Token) String() (retv string) {
+	switch t {
+	case None:
+		retv = "None"
+	case EOF:
+		retv = "EOF"
+	case Other:
+		retv = "Other"
+	case NewLine:
+		retv = "NewLine"
+	case WhiteSpace:
+		retv = "WhiteSpace"
+	case Identifier:
+		retv = "Identifier"
+	case String:
+		retv = "String"
+	case Assign:
+		retv = "Assign"
+	case Slash:
+		retv = "Slash"
+	case LeftAngleBracket:
+		retv = "LeftAngleBracket"
+	case RightAngleBracket:
+		retv = "RightAngleBracket"
+	case SingleQuote:
+		retv = "SingleQuote"
+	case DoubleQuote:
+		retv = "DoubleQuote"
+	case TripleQuote:
+		retv = "TripleQuote"
+	case TagStart:
+		retv = "TagStart"
+	case TagSelfClosing:
+		retv = "TagSelfClosing"
+	case ClosingTagStart:
+		retv = "ClosingTagStart"
+	}
+
+	return ""
+}
 
 var TokenLiterals = map[Token]string{
 	Assign:            "=",
