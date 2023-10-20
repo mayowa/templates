@@ -3,6 +3,7 @@ package scanner
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/mayowa/templates"
@@ -51,28 +52,59 @@ func (s *Scanner) newTokenItem(token Token, literal string) *TokenItem {
 	return ti
 }
 
-func (s *Scanner) FindTagHead() *templates.Tag {
-	// look for tag
-	found := false
+func (s *Scanner) FindTagHead() (*templates.Tag, error) {
+	var tkItem *TokenItem
+	// look for tag start
 	for {
-		tkItem := s.Scan()
+		tkItem = s.Scan()
 		if tkItem.Token == EOF {
 			break
 		} else if tkItem.Token == TagStart {
 			s.unread()
-			found = true
 			break
 		}
 	}
 
 	tag := new(templates.Tag)
-	if !found {
-		return nil
+	if tkItem.Token == TagStart {
+		return nil, nil
 	}
 
-	// Todo: populate tag
+	// next token must be an Identifier
+	tkItem = s.Scan()
+	if tkItem.Token != Identifier {
+		return nil, nil
+	}
+	tag.Name = tkItem.Literal
 
-	return tag
+	// next comes the args if any
+	argTokens, lastToken := s.ScanUntil(RightAngleBracket)
+	if lastToken.Token == EOF {
+		return nil, fmt.Errorf("closing bracket '>' not found for tag at line %d", lastToken.Line)
+	}
+
+	// todo: parse argTokens
+
+	return tag, nil
+}
+
+func (s *Scanner) ScanUntil(token Token) ([]*TokenItem, *TokenItem) {
+	var (
+		items  []*TokenItem
+		tkItem *TokenItem
+	)
+
+	for {
+		tkItem = s.Scan()
+		if tkItem.Token == EOF {
+			break
+		} else if tkItem.Token == token {
+			break
+		}
+		items = append(items, tkItem)
+	}
+
+	return items, tkItem
 }
 
 func (s *Scanner) Scan() *TokenItem {
@@ -160,7 +192,7 @@ func (s *Scanner) scanIdentifier() *TokenItem {
 	for {
 		if ch := s.read(); ch == eof {
 			break
-		} else if !isLetter(ch) && !isDigit(ch) && ch != '_' {
+		} else if !isLetter(ch) && !isDigit(ch) && ch != '-' {
 			s.unread()
 			break
 		} else {
