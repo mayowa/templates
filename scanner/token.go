@@ -5,72 +5,72 @@ var eof = rune(0)
 type Token int
 
 const (
-	None Token = iota - 1
-	EOF
-	Other
-	NewLine
-	WhiteSpace
-	// Identifier matches [a-ZA-Z0-9-]
-	Identifier
-	// String matches "|'[\w\W\s]"|'
-	String
-	Assign
-	Slash
-	BackSlash
-	LeftAngleBracket
-	RightAngleBracket
-	SingleQuote
-	DoubleQuote
-	TripleQuote
-	TagStart
-	TagSelfClosing
-	ClosingTagStart
-	EscSingleQuote
-	EscDoubleQuote
+	TokenNone Token = iota - 1
+	TokenEOF
+	TokenOther
+	TokenNewLine
+	TokenWhiteSpace
+	// TokenIdentifier matches [a-ZA-Z0-9-]
+	TokenIdentifier
+	// TokenString matches "|'[\w\W\s]"|'
+	TokenString
+	TokenAssign
+	TokenSlash
+	TokenBackSlash
+	TokenLeftAngleBracket
+	TokenRightAngleBracket
+	TokenSingleQuote
+	TokenDoubleQuote
+	TokenTripleQuote
+	TokenTagStart
+	TokenTagSelfClosing
+	TokenClosingTagStart
+	TokenEscSingleQuote
+	TokenEscDoubleQuote
 )
 
 func (t Token) String() string {
 	var retv string
 	switch t {
-	case None:
+	case TokenNone:
 		retv = "None"
-	case EOF:
+	case TokenEOF:
 		retv = "EOF"
-	case Other:
+	case TokenOther:
 		retv = "Other"
-	case NewLine:
+	case TokenNewLine:
 		retv = "NewLine"
-	case WhiteSpace:
+	case TokenWhiteSpace:
 		retv = "WhiteSpace"
-	case Identifier:
+	case TokenIdentifier:
 		retv = "Identifier"
-	case String:
+	case TokenString:
 		retv = "String"
-	case Assign:
+	case TokenAssign:
 		retv = "Assign"
-	case Slash:
+	case TokenSlash:
 		retv = "Slash"
-	case BackSlash:
+	case TokenBackSlash:
 		retv = "BackSlash"
-	case LeftAngleBracket:
+	case TokenLeftAngleBracket:
 		retv = "LeftAngleBracket"
-	case RightAngleBracket:
+	case TokenRightAngleBracket:
 		retv = "RightAngleBracket"
-	case SingleQuote:
+	case TokenSingleQuote:
 		retv = "SingleQuote"
-	case DoubleQuote:
+	case TokenDoubleQuote:
 		retv = "DoubleQuote"
-	case TripleQuote:
+	case TokenTripleQuote:
 		retv = "TripleQuote"
-	case TagStart:
+	case TokenTagStart:
 		retv = "TagStart"
-	case TagSelfClosing:
+	case TokenTagSelfClosing:
 		retv = "TagSelfClosing"
-	case ClosingTagStart:
+	case TokenClosingTagStart:
 		retv = "ClosingTagStart"
-	case EscSingleQuote:
+	case TokenEscSingleQuote:
 		retv = "EscSingleQuote"
-	case EscDoubleQuote:
+	case TokenEscDoubleQuote:
 		retv = "EscDoubleQuote"
 	}
 

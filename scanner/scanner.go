@@ -91,7 +91,7 @@ func (s *Scanner) newTokenItem(token Token, literal string) *TokenItem {
 
 func (s *Scanner) ParseTagArgs() (map[string]string, error) {
 
-	args, err := s.parseArgs(EOF)
+	args, err := s.parseArgs(TokenEOF)
 	if err != nil {
 		return nil, err
 	}
@@ -117,19 +117,19 @@ func (s *Scanner) parseArgs(until Token) (map[string]string, error) {
 
 	for len(wrkItems) > 0 {
 		item, wrkItems = trimWhiteSpace(wrkItems)
-		if item.Token == until || item.Token == EOF {
+		if item.Token == until || item.Token == TokenEOF {
 			break
 		}
 
 		// Identifier
-		if item.Token != Identifier {
+		if item.Token != TokenIdentifier {
 			continue
 		}
 		name := item.Literal
 
 		// Assign
 		item, wrkItems = trimWhiteSpace(wrkItems)
-		if item.Token != Assign {
+		if item.Token != TokenAssign {
 			return nil, fmt.Errorf("expected '=', found %q", item.Literal)
 		}
 
@@ -168,7 +168,7 @@ func concatItems(items []*TokenItem) string {
 func nextArg(tokens []*TokenItem) int {
 	tCount := len(tokens)
 	for pos, tkItem := range tokens {
-		if pos+1 < tCount && tkItem.Token == Identifier && tokens[pos+1].Token == Assign {
+		if pos+1 < tCount && tkItem.Token == TokenIdentifier && tokens[pos+1].Token == TokenAssign {
 			return pos
 		}
 	}
@@ -179,8 +179,8 @@ func nextArg(tokens []*TokenItem) int {
 func extractArgVal(tokens []*TokenItem) ([]*TokenItem, []*TokenItem, error) {
 	// Single or Double Quote
 	item, wrkItems := trimWhiteSpace(tokens)
-	if item.Token != SingleQuote && item.Token != DoubleQuote {
-		return nil, nil, fmt.Errorf("expected %s or %s, found %s", SingleQuote, DoubleQuote, item.Token)
+	if item.Token != TokenSingleQuote && item.Token != TokenDoubleQuote {
+		return nil, nil, fmt.Errorf("expected %s or %s, found %s", TokenSingleQuote, TokenDoubleQuote, item.Token)
 	}
 	stringStart := item.Token
 
@@ -213,7 +213,7 @@ func extractArgVal(tokens []*TokenItem) ([]*TokenItem, []*TokenItem, error) {
 
 func trimWhiteSpace(tokens []*TokenItem) (*TokenItem, []*TokenItem) {
 	itm, tokens := pop(tokens)
-	if itm.Token == WhiteSpace {
+	if itm.Token == TokenWhiteSpace {
 		itm, tokens = pop(tokens)
 	}
 
@@ -237,7 +237,7 @@ func (s *Scanner) ScanUntil(token Token, withPeek bool) (items []*TokenItem, las
 
 	for {
 		lastItem = s.Scan()
-		if lastItem.Token == EOF {
+		if lastItem.Token == TokenEOF {
 			break
 		} else if lastItem.Token == token {
 			break
@@ -273,57 +273,57 @@ func (s *Scanner) Scan() *TokenItem {
 	// Otherwise read the individual character.
 	switch ch {
 	case eof:
-		return s.newTokenItem(EOF, "")
+		return s.newTokenItem(TokenEOF, "")
 	case '<':
 		nextCh := s.read()
 		if isUpperCaseLetter(nextCh) {
 			s.unread()
 			// look for TagStart "<X"
-			return s.newTokenItem(TagStart, string(ch))
+			return s.newTokenItem(TokenTagStart, string(ch))
 		} else if nextCh == '/' {
 			// look for start ClosingTag "</X"
 			nextCh = s.read()
 			s.unread()
 			if isUpperCaseLetter(nextCh) {
-				return s.newTokenItem(ClosingTagStart, "</")
+				return s.newTokenItem(TokenClosingTagStart, "</")
 			}
 		}
 
 		if nextCh != eof {
 			s.unread()
 		}
-		return s.newTokenItem(LeftAngleBracket, string(ch))
+		return s.newTokenItem(TokenLeftAngleBracket, string(ch))
 
 	case '/':
 		nextCh := s.read()
 		if nextCh == '>' {
-			return s.newTokenItem(TagSelfClosing, "/>")
+			return s.newTokenItem(TokenTagSelfClosing, "/>")
 		}
 		if nextCh != eof {
 			s.unread()
 		}
-		return s.newTokenItem(BackSlash, "/")
+		return s.newTokenItem(TokenBackSlash, "/")
 	case '>':
-		return s.newTokenItem(RightAngleBracket, string(ch))
+		return s.newTokenItem(TokenRightAngleBracket, string(ch))
 	case '=':
-		return s.newTokenItem(Assign, string(ch))
+		return s.newTokenItem(TokenAssign, string(ch))
 	case '\'':
-		return s.newTokenItem(SingleQuote, string(ch))
+		return s.newTokenItem(TokenSingleQuote, string(ch))
 	case '"':
-		return s.newTokenItem(DoubleQuote, string(ch))
+		return s.newTokenItem(TokenDoubleQuote, string(ch))
 	case '\\':
 		nextCh := s.read()
 		if nextCh == '\'' {
-			return s.newTokenItem(EscSingleQuote, string(`\'`))
+			return s.newTokenItem(TokenEscSingleQuote, string(`\'`))
 		} else if nextCh == '"' {
-			return s.newTokenItem(EscDoubleQuote, string(`\"`))
+			return s.newTokenItem(TokenEscDoubleQuote, string(`\"`))
 		}
-		return s.newTokenItem(Slash, string(ch))
+		return s.newTokenItem(TokenSlash, string(ch))
 	case '`':
-		return s.newTokenItem(TripleQuote, string(ch))
+		return s.newTokenItem(TokenTripleQuote, string(ch))
 	}
 
-	return s.newTokenItem(Other, string(ch))
+	return s.newTokenItem(TokenOther, string(ch))
 }
 
 func (s *Scanner) scanWhitespace() *TokenItem {
@@ -344,7 +344,7 @@ func (s *Scanner) scanWhitespace() *TokenItem {
 		}
 	}
 
-	return s.newTokenItem(WhiteSpace, buf.String())
+	return s.newTokenItem(TokenWhiteSpace, buf.String())
 }
 
 func (s *Scanner) scanIdentifier() *TokenItem {
@@ -365,7 +365,7 @@ func (s *Scanner) scanIdentifier() *TokenItem {
 		}
 	}
 
-	return s.newTokenItem(Identifier, buf.String())
+	return s.newTokenItem(TokenIdentifier, buf.String())
 }
 
 func isLetter(ch rune) bool {
