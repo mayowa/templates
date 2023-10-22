@@ -1,9 +1,12 @@
 package templates
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/mayowa/templates/scanner"
 )
 
 var reTagHead = regexp.MustCompile(`<([A-Z][a-z-]+) *([\w\W]*?) *>`)
@@ -43,6 +46,7 @@ func findNextTag(content []byte) (*Tag, error) {
 }
 
 func findTagHead(content []byte) (*Tag, error) {
+	var err error
 	loc := reTagHead.FindSubmatchIndex(content)
 	if loc == nil {
 		return nil, nil
@@ -51,9 +55,17 @@ func findTagHead(content []byte) (*Tag, error) {
 	t := new(Tag)
 	t.loc = loc
 	t.Name = string(content[loc[2]:loc[3]])
+	t.SelfClosing = strings.HasSuffix(string(content[loc[0]:loc[1]]), "/>")
 	if len(loc) > 4 {
 		args := string(content[loc[4]:loc[5]])
-		t.Args = parseArgs(args)
+		if t.SelfClosing {
+			args = string(content[loc[4] : loc[5]-1])
+		}
+		scan := scanner.NewScanner(bytes.NewBufferString(args))
+		t.Args, err = scan.ParseTagArgs()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	head := string(content[loc[0]:loc[1]])

@@ -16,6 +16,7 @@ const (
 	String
 	Assign
 	Slash
+	BackSlash
 	LeftAngleBracket
 	RightAngleBracket
 	SingleQuote
@@ -24,9 +25,12 @@ const (
 	TagStart
 	TagSelfClosing
 	ClosingTagStart
+	EscSingleQuote
+	EscDoubleQuote
 )
 
-func (t Token) String() (retv string) {
+func (t Token) String() string {
+	var retv string
 	switch t {
 	case None:
 		retv = "None"
@@ -46,6 +50,8 @@ func (t Token) String() (retv string) {
 		retv = "Assign"
 	case Slash:
 		retv = "Slash"
+	case BackSlash:
+		retv = "BackSlash"
 	case LeftAngleBracket:
 		retv = "LeftAngleBracket"
 	case RightAngleBracket:
@@ -62,45 +68,19 @@ func (t Token) String() (retv string) {
 		retv = "TagSelfClosing"
 	case ClosingTagStart:
 		retv = "ClosingTagStart"
+	case EscSingleQuote:
+		retv = "EscSingleQuote"
+	case EscDoubleQuote:
+		retv = "EscDoubleQuote"
 	}
 
-	return ""
-}
-
-var TokenLiterals = map[Token]string{
-	Assign:            "=",
-	Slash:             "/",
-	LeftAngleBracket:  "<",
-	RightAngleBracket: ">",
-	SingleQuote:       "'",
-	DoubleQuote:       "\"",
-	TripleQuote:       "`",
-	ClosingTagStart:   "</",
-	TagSelfClosing:    "/>",
+	return retv
 }
 
 type TokenItem struct {
-	Token    Token
-	Literal  string
-	Position int
-	Line     int
-}
-
-func getTokenLiteral(token Token) string {
-	lt, found := TokenLiterals[token]
-	if !found {
-		return ""
-	}
-
-	return lt
-}
-
-func NewTokenItem(token Token, literal string, position int) *TokenItem {
-	ti := &TokenItem{
-		Token:    token,
-		Literal:  literal,
-		Position: position,
-	}
-
-	return ti
+	Token         Token
+	Literal       string
+	StartPosition int
+	EndPosition   int
+	Line          int
 }
