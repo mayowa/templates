@@ -19,10 +19,11 @@ type Template struct {
 	sharedFolder string
 	FuncMap      template.FuncMap
 
-	cache      map[string]*template.Template
-	mtx        sync.RWMutex
-	Debug      bool
-	components *template.Template
+	cache              map[string]*template.Template
+	mtx                sync.RWMutex
+	Debug              bool
+	components         map[string]ComponentRenderer
+	componentTemplates *template.Template
 }
 
 func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
@@ -41,12 +42,13 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 		return nil, err
 	}
 
+	t.components = make(map[string]ComponentRenderer)
 	t.FuncMap["html"] = func(v string) template.HTML { return template.HTML(v) }
 
 	// components templates
 	componentsFolder := "components"
 	if t.isFolder(componentsFolder) {
-		t.components, err = template.New("").Funcs(t.FuncMap).ParseGlob(filepath.Join(t.root, componentsFolder) + "/*" + t.ext)
+		t.componentTemplates, err = template.New("").Funcs(t.FuncMap).ParseGlob(filepath.Join(t.root, componentsFolder) + "/*" + t.ext)
 		if err != nil {
 			return nil, err
 		}
@@ -55,6 +57,11 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 }
 
 func (t *Template) init() error {
+	return nil
+}
+
+func (t *Template) RegisterComponentRenderer(name string, renderer ComponentRenderer) error {
+	t.components[name] = renderer
 	return nil
 }
 

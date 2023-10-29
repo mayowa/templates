@@ -1,0 +1,8 @@
+<div class="isBox">
+	<h1 class="{{.foo}}">{{.tag.Args.title}}</h1>
+	{{with .tag.Body}}
+	<div >
+		{{- .tag | html -}}
+	</div>
+	{{end}}
+</div>

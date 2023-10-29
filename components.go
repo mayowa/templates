@@ -2,11 +2,15 @@ package templates
 
 import (
 	"bytes"
+	"html/template"
+	"io"
 	"strings"
 )
 
+type ComponentRenderer func(wr io.Writer, tag *Tag, tpl *template.Template) error
+
 func (t *Template) processComponentsInTemplate(contents *[]byte) error {
-	if t.components == nil {
+	if t.componentTemplates == nil {
 		return nil
 	}
 
@@ -21,14 +25,20 @@ func (t *Template) processComponentsInTemplate(contents *[]byte) error {
 		}
 
 		// check if a template named t.name exists in the components folder
-		cTpl := t.components.Lookup(strings.ToLower(cTag.Name + t.ext))
+		cName := strings.ToLower(cTag.Name)
+		cTpl := t.componentTemplates.Lookup(strings.ToLower(cName + t.ext))
 		if cTpl == nil {
 			// no template for this tag
 			continue
 		}
 
-		if err = cTpl.Execute(buf, cTag); err != nil {
-			return err
+		renderer, found := t.components[cName]
+		if found {
+			err = renderer(buf, cTag, cTpl)
+		} else {
+			if err = cTpl.Execute(buf, cTag); err != nil {
+				return err
+			}
 		}
 
 		// replace rendered component with tag block
