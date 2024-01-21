@@ -49,7 +49,7 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 	componentsFolder := "components"
 	if t.isFolder(componentsFolder) {
 		t.componentTemplates, err = template.New("").Funcs(t.FuncMap).ParseGlob(filepath.Join(t.root, componentsFolder) + "/*" + t.ext)
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "pattern matches no files") {
 			return nil, err
 		}
 	}
