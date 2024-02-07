@@ -12,11 +12,14 @@ import (
 var reTagHead = regexp.MustCompile(`<([A-Z][a-z-]+) *([\w\W]*?) *>`)
 var reTagEnd = regexp.MustCompile(`</([A-Z][a-z-]+)>`)
 var reTagArg = regexp.MustCompile(`([\w\-]+) *= *["|']([\w\W\s]*?)["|']`)
+var reGoTplTag = regexp.MustCompile(`{{[\s\S\w]*?}}`)
+
+type ArgMap map[string]string
 
 type Tag struct {
 	loc         []int
 	Name        string
-	Args        map[string]string
+	Args        ArgMap
 	Body        string
 	SelfClosing bool
 }
@@ -162,4 +165,61 @@ func findTagEnds(tagName string, content []byte) [][]int {
 	}
 
 	return retv
+}
+
+type Block struct {
+	Positions   []BlockPosition
+	Name        string
+	Args        ArgMap
+	Body        string
+	SelfClosing bool
+}
+
+type BlockPositions int
+
+const (
+	BlkHeadPos BlockPositions = iota
+	BlkEndPos
+)
+
+type BlockPosition struct {
+	Start int
+	Stop  int
+}
+
+func FindBlock(content []byte) (*Block, error) {
+	block := &Block{Positions: []BlockPosition{}}
+	tag, err := findTagHead(content)
+	if err != nil {
+		return nil, err
+	}
+	if tag == nil {
+		return nil, nil
+	}
+
+	block.Args = tag.Args
+	block.Name = tag.Name
+	block.SelfClosing = tag.SelfClosing
+	block.Positions[BlkHeadPos].Start = tag.loc[0]
+	block.Positions[BlkHeadPos].Stop = tag.loc[1]
+
+	ti, loc := findTagEnd(content[block.Positions[BlkHeadPos].Stop:])
+	if ti.name != block.Name {
+		return nil, fmt.Errorf("cant find closing tag for %q", block.Name)
+	}
+
+	block.Positions[BlkEndPos].Start = loc[0]
+	block.Positions[BlkEndPos].Stop = loc[1]
+	block.Body = string(content[block.Positions[BlkHeadPos].Stop:block.Positions[BlkEndPos].Start])
+
+	return block, nil
+}
+
+func findTagEnd(content []byte) (*tagInfo, []int) {
+	loc := reTagEnd.FindSubmatchIndex(content)
+	if loc == nil {
+		return nil, nil
+	}
+
+	return getTagInfo(reTagEnd, loc, content), loc
 }
