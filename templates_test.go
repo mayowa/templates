@@ -3,7 +3,6 @@ package templates
 import (
 	"bytes"
 	"html/template"
-	"io"
 	"strings"
 	"testing"
 
@@ -24,7 +23,7 @@ func TestNewTemplates(t *testing.T) {
 	assert.Equal(t, "testData/shared", tpl.sharedFolder)
 
 	buff := bytes.NewBuffer(nil)
-	d := struct{ Name string }{Name: "philippta"}
+	d := Context{"Name": "philippta"}
 	err = tpl.Render(buff, "base", "profile", d)
 	require.NoError(t, err)
 	assert.Equal(t,
@@ -39,7 +38,7 @@ func Test_templateCache(t *testing.T) {
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
-	d := struct{ Name string }{Name: "philippta"}
+	d := Context{"Name": "philippta"}
 	err = tpl.Render(buff, "base", "profile", d)
 	require.NoError(t, err)
 	assert.Contains(t, tpl.cache, "profile")
@@ -59,7 +58,7 @@ func Test__noTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
-	d := struct{ Name string }{Name: "philippta"}
+	d := Context{"Name": "philippta"}
 	err = tpl.Render(buff, "", "info", d)
 	require.NoError(t, err)
 
@@ -75,7 +74,7 @@ func Test__templateFolder(t *testing.T) {
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
-	d := struct{ Name string }{Name: "philippta"}
+	d := Context{"Name": "philippta"}
 	err = tpl.Render(buff, "cast", "block", d)
 	require.NoError(t, err)
 	assert.Equal(t,
@@ -156,7 +155,7 @@ func TestTemplate_Lookup(t *testing.T) {
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
-	d := struct{ Name string }{Name: "philippta"}
+	d := Context{"Name": "philippta"}
 	err = tpl.Render(buff, "cast", "block", d)
 	require.NoError(t, err)
 	assert.True(t, tpl.Exists("block"))
@@ -169,7 +168,7 @@ func TestTemplate_NoShared(t *testing.T) {
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
-	d := struct{ Name string }{Name: "philippta"}
+	d := Context{"Name": "philippta"}
 	err = tpl.Render(buff, "", "solo", d)
 	require.NoError(t, err)
 	assert.Equal(t, "philippta, This is solo act!", buff.String())
@@ -184,20 +183,4 @@ func Test_Components(t *testing.T) {
 	require.NoError(t, err)
 	t.Log(buff.String())
 
-}
-
-func Test_ComponentRenderer(t *testing.T) {
-	buff := bytes.NewBuffer(nil)
-	tpl, err := New("./testData", "tmpl", fm)
-	require.NoError(t, err)
-	err = tpl.RegisterComponentRenderer("box", func(wr io.Writer, tag *Tag, tpl *template.Template) error {
-		if err := tpl.Execute(wr, map[string]any{"tag": tag, "foo": "bar"}); err != nil {
-			return err
-		}
-		return nil
-	})
-
-	err = tpl.Render(buff, "", "comp-renderer", nil)
-	require.NoError(t, err)
-	t.Log(buff.String())
 }

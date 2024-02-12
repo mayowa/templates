@@ -16,6 +16,14 @@ var reGoTplTag = regexp.MustCompile(`{{[\s\S\w]*?}}`)
 
 type ArgMap map[string]string
 
+func (m ArgMap) ArgPairs() string {
+	retv := []string{}
+	for k, v := range m {
+		retv = append(retv, fmt.Sprintf("%q %q", k, v))
+	}
+	return strings.Join(retv, " ")
+}
+
 type Tag struct {
 	loc         []int
 	Name        string
@@ -48,24 +56,18 @@ func findNextTag(content []byte) (*Tag, error) {
 	return t, nil
 }
 
-func findTagHead(content []byte) (*Tag, error) {
-	var err error
-	loc := reTagHead.FindSubmatchIndex(content)
-	if loc == nil {
-		return nil, nil
-	}
-
-	t := new(Tag)
-	t.loc = loc
-	t.Name = string(content[loc[2]:loc[3]])
-	t.SelfClosing = strings.HasSuffix(string(content[loc[0]:loc[1]]), "/>")
+func NewTag(content []byte, loc []int) (tag *Tag, err error) {
+	tag = new(Tag)
+	tag.loc = loc
+	tag.Name = string(content[loc[2]:loc[3]])
+	tag.SelfClosing = strings.HasSuffix(string(content[loc[0]:loc[1]]), "/>")
 	if len(loc) > 4 {
 		args := string(content[loc[4]:loc[5]])
-		if t.SelfClosing {
+		if tag.SelfClosing {
 			args = string(content[loc[4] : loc[5]-1])
 		}
 		scan := scanner.NewScanner(bytes.NewBufferString(args))
-		t.Args, err = scan.ParseTagArgs()
+		tag.Args, err = scan.ParseTagArgs()
 		if err != nil {
 			return nil, err
 		}
@@ -73,10 +75,28 @@ func findTagHead(content []byte) (*Tag, error) {
 
 	head := string(content[loc[0]:loc[1]])
 	if strings.HasSuffix(head, "/>") {
-		t.SelfClosing = true
+		tag.SelfClosing = true
 	}
 
-	return t, nil
+	return tag, nil
+}
+
+func findTagHead(content []byte) (*Tag, error) {
+	var (
+		err error
+		tag *Tag
+	)
+
+	loc := reTagHead.FindSubmatchIndex(content)
+	if loc == nil {
+		return nil, nil
+	}
+
+	if tag, err = NewTag(content, loc); err != nil {
+		return nil, err
+	}
+
+	return tag, nil
 }
 
 func parseArgs(args string) map[string]string {
@@ -115,6 +135,7 @@ func getBody(tagName string, content []byte) (string, int, error) {
 type tagInfo struct {
 	name        string
 	selfClosing bool
+	loc         []int
 }
 
 func getTagInfo(re *regexp.Regexp, l []int, txt []byte) *tagInfo {
@@ -126,6 +147,7 @@ func getTagInfo(re *regexp.Regexp, l []int, txt []byte) *tagInfo {
 	ti := &tagInfo{
 		name:        strings.ToLower(string(nTxt[loc[2]:loc[3]])),
 		selfClosing: strings.HasSuffix(string(nTxt[loc[0]:loc[1]]), "/>"),
+		loc:         l,
 	}
 
 	return ti
@@ -149,6 +171,23 @@ func findTagHeads(tagName string, content []byte) [][]int {
 	return retv
 }
 
+func findAllTagHeads(content []byte) []*tagInfo {
+	locs := reTagHead.FindAllSubmatchIndex(content, -1)
+	if locs == nil {
+		return nil
+	}
+
+	var retv []*tagInfo
+	for _, l := range locs {
+		ti := getTagInfo(reTagHead, l, content)
+		if ti != nil && !ti.selfClosing {
+			retv = append(retv, ti)
+		}
+	}
+
+	return retv
+}
+
 func findTagEnds(tagName string, content []byte) [][]int {
 	tagName = strings.ToLower(tagName)
 	locs := reTagEnd.FindAllIndex(content, -1)
@@ -161,6 +200,27 @@ func findTagEnds(tagName string, content []byte) [][]int {
 		ti := getTagInfo(reTagEnd, l, content)
 		if ti != nil && ti.name == tagName {
 			retv = append(retv, l)
+		}
+	}
+
+	return retv
+}
+
+func findAllTagEnds(content []byte, tagName string) []*tagInfo {
+	tagName = strings.ToLower(tagName)
+	locs := reTagEnd.FindAllIndex(content, -1)
+	if locs == nil {
+		return nil
+	}
+
+	var retv []*tagInfo
+	for _, l := range locs {
+		ti := getTagInfo(reTagEnd, l, content)
+		if ti != nil {
+			retv = append(retv, ti)
+			if ti.name == tagName {
+				break
+			}
 		}
 	}
 
@@ -187,9 +247,62 @@ type BlockPosition struct {
 	Stop  int
 }
 
-func FindBlock(content []byte) (*Block, error) {
-	block := &Block{Positions: []BlockPosition{}}
-	tag, err := findTagHead(content)
+func FindInnerBlock(content []byte) (*Block, error) {
+	var (
+		err error
+		tag *Tag
+	)
+
+	tag, err = findTagHead(content)
+	if err != nil {
+		return nil, err
+	}
+	if tag == nil {
+		return nil, nil
+	}
+	if tag.SelfClosing {
+		return FindBlock(content, tag)
+	}
+
+	// find tagHeads
+	heads := findAllTagHeads(content)
+	if heads == nil {
+		return nil, nil
+	}
+
+	// proc innermost tag
+	innerHead := heads[len(heads)-1]
+
+	// find tagEnds for the innerHead most tag
+	ends := findAllTagEnds(content, innerHead.name)
+	if ends == nil {
+		return nil, fmt.Errorf("can't find closing tag for <%s>", innerHead.name)
+	}
+	innerEnd := ends[0]
+
+	if innerHead.name != innerEnd.name {
+		return nil, fmt.Errorf("expected </%s> found </%s>", innerHead.name, innerEnd.name)
+	}
+
+	tag, err = NewTag(content, innerHead.loc)
+	if err != nil {
+		return nil, err
+	}
+
+	block, err := FindBlock(content, tag)
+	if err != nil {
+		return nil, err
+	}
+
+	return block, err
+}
+
+func FindBlock(content []byte, tag *Tag) (*Block, error) {
+	var err error
+	block := &Block{Positions: make([]BlockPosition, 2)}
+	if tag == nil {
+		tag, err = findTagHead(content)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -203,13 +316,20 @@ func FindBlock(content []byte) (*Block, error) {
 	block.Positions[BlkHeadPos].Start = tag.loc[0]
 	block.Positions[BlkHeadPos].Stop = tag.loc[1]
 
+	if block.SelfClosing {
+		block.Positions[BlkEndPos].Start = tag.loc[0]
+		block.Positions[BlkEndPos].Stop = tag.loc[1]
+
+		return block, nil
+	}
+
 	ti, loc := findTagEnd(content[block.Positions[BlkHeadPos].Stop:])
-	if ti.name != block.Name {
+	if ti == nil || ti.name != strings.ToLower(block.Name) {
 		return nil, fmt.Errorf("cant find closing tag for %q", block.Name)
 	}
 
-	block.Positions[BlkEndPos].Start = loc[0]
-	block.Positions[BlkEndPos].Stop = loc[1]
+	block.Positions[BlkEndPos].Start = loc[0] + block.Positions[BlkHeadPos].Stop
+	block.Positions[BlkEndPos].Stop = loc[1] + block.Positions[BlkHeadPos].Stop
 	block.Body = string(content[block.Positions[BlkHeadPos].Stop:block.Positions[BlkEndPos].Start])
 
 	return block, nil

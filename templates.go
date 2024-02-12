@@ -14,20 +14,29 @@ import (
 )
 
 type Template struct {
-	root         string
-	ext          string
-	sharedFolder string
-	FuncMap      template.FuncMap
+	root             string
+	ext              string
+	sharedFolder     string
+	componentsFolder string
+	FuncMap          template.FuncMap
 
-	cache              map[string]*template.Template
-	mtx                sync.RWMutex
-	Debug              bool
-	components         map[string]ComponentRenderer
-	componentTemplates *template.Template
+	cache      map[string]*template.Template
+	mtx        sync.RWMutex
+	Debug      bool
+	components map[string]ComponentRenderer
+	compData   map[string]*ComponentData
+	// componentTemplates *template.Template
 }
 
+type ComponentData struct {
+	Args ArgMap
+	Body string
+}
+
+type Context map[string]any
+
 func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
-	var err error
+	// var err error
 	t := new(Template)
 	t.root = root
 	t.ext = ext
@@ -38,21 +47,27 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 	t.cache = make(map[string]*template.Template)
 
 	t.sharedFolder = filepath.Join(t.root, "shared")
+	t.componentsFolder = filepath.Join(t.root, "components")
+	t.compData = make(map[string]*ComponentData)
+
 	if err := t.init(); err != nil {
 		return nil, err
 	}
 
-	t.components = make(map[string]ComponentRenderer)
+	// t.components = make(map[string]ComponentRenderer)
 	t.FuncMap["html"] = func(v string) template.HTML { return template.HTML(v) }
+	t.FuncMap["argMap"] = argMap
+	t.FuncMap["componentData"] = getComponentData
+	t.FuncMap["trimSpace"] = strings.TrimSpace
 
 	// components templates
-	componentsFolder := "components"
-	if t.isFolder(componentsFolder) {
-		t.componentTemplates, err = template.New("").Funcs(t.FuncMap).ParseGlob(filepath.Join(t.root, componentsFolder) + "/*" + t.ext)
-		if err != nil && !strings.Contains(err.Error(), "pattern matches no files") {
-			return nil, err
-		}
-	}
+	// componentsFolder := "components"
+	// if t.isFolder(componentsFolder) {
+	// 	t.componentTemplates, err = template.New("").Funcs(t.FuncMap).ParseGlob(filepath.Join(t.root, componentsFolder) + "/*" + t.ext)
+	// 	if err != nil && !strings.Contains(err.Error(), "pattern matches no files") {
+	// 		return nil, err
+	// 	}
+	// }
 	return t, nil
 }
 
@@ -65,11 +80,15 @@ func (t *Template) RegisterComponentRenderer(name string, renderer ComponentRend
 	return nil
 }
 
-func (t *Template) Render(out io.Writer, layout, name string, data any) error {
+func (t *Template) setGlobals(ctx *Context) {
+	(*ctx)["[[--components--]]"] = t.compData
+}
+
+func (t *Template) Render(out io.Writer, layout, name string, data Context) error {
 	return t.RenderFiles(out, data, layout, name)
 }
 
-func (t *Template) RenderFiles(out io.Writer, data any, layout, name string, others ...string) error {
+func (t *Template) RenderFiles(out io.Writer, data Context, layout, name string, others ...string) error {
 	var (
 		err   error
 		found bool
@@ -81,6 +100,11 @@ func (t *Template) RenderFiles(out io.Writer, data any, layout, name string, oth
 		tpl, found = t.cache[name]
 		t.mtx.RUnlock()
 	}
+
+	if data == nil {
+		data = Context{}
+	}
+	t.setGlobals(&data)
 
 	if !found {
 		others = append([]string{name}, others...)
@@ -96,6 +120,7 @@ func (t *Template) RenderFiles(out io.Writer, data any, layout, name string, oth
 
 	return tpl.Execute(out, data)
 }
+
 func (t *Template) Exists(name string) bool {
 	var (
 		found bool
@@ -136,9 +161,8 @@ func (t *Template) String(layout, src string, data any) (string, error) {
 	}
 
 	filenames, _ := t.findFiles(t.sharedFolder, t.ext)
-	if err != nil {
-		return "", err
-	}
+	// cFilenames, _ := t.findFiles(t.componentsFolder, t.ext)
+	// filenames = append(filenames, cFilenames...)
 
 	if len(filenames) > 0 {
 		if tpl, err = t.parseFiles(tpl, t.readFileOS, filenames...); err != nil {
@@ -208,7 +232,10 @@ func (t *Template) parse(layout string, names ...string) (*template.Template, er
 	if err != nil {
 		return nil, err
 	}
+
 	filenames, _ := t.findFiles(t.sharedFolder, t.ext)
+	// cFilenames, _ := t.findFiles(t.componentsFolder, t.ext)
+	// filenames = append(filenames, cFilenames...)
 	if len(filenames) > 0 {
 		return t.parseFiles(tpl, t.readFileOS, filenames...)
 	}

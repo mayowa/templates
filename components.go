@@ -2,53 +2,77 @@ package templates
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
-type ComponentRenderer func(wr io.Writer, tag *Tag, tpl *template.Template) error
+type ComponentRenderer func(wr io.Writer, block *Block, tpl *template.Template) error
 
 func (t *Template) processComponentsInTemplate(contents *[]byte) error {
-	if t.componentTemplates == nil {
-		return nil
-	}
+	// if t.componentTemplates == nil {
+	// 	return nil
+	// }
 
 	buf := bytes.NewBuffer(nil)
 	for {
-		cTag, err := findNextTag(*contents)
+		block, err := FindInnerBlock(*contents)
 		if err != nil {
 			return err
 		}
-		if cTag == nil {
+		if block == nil {
 			break
 		}
 
-		// check if a template named t.name exists in the components folder
-		cName := strings.ToLower(cTag.Name)
-		cTpl := t.componentTemplates.Lookup(strings.ToLower(cName + t.ext))
-		if cTpl == nil {
-			// no template for this tag
-			continue
+		// renderer, found := t.components[cName]
+		compID := fmt.Sprintf("%s%d", block.Name, len(t.compData)+1)
+		t.compData[compID] = &ComponentData{
+			Args: block.Args,
+			Body: block.Body,
 		}
 
-		renderer, found := t.components[cName]
-		if found {
-			err = renderer(buf, cTag, cTpl)
-		} else {
-			if err = cTpl.Execute(buf, cTag); err != nil {
-				return err
-			}
+		if err = t.renderComponent(buf, block.Name, compID, block.Body); err != nil {
+			return err
 		}
 
 		// replace rendered component with tag block
-		start := cTag.loc[0]
-		end := cTag.loc[1]
+		start := block.Positions[BlkHeadPos].Start
+		end := block.Positions[BlkEndPos].Stop
 		*contents = append((*contents)[:start], append(buf.Bytes(), (*contents)[end:]...)...)
 		// tHalf := (*contents)[:start]
 		// bHalf := (*contents)[end:]
 		// *contents = append(tHalf, append(buf.Bytes(), bHalf...)...)
+
 		buf.Reset()
+	}
+
+	return nil
+}
+
+func (t *Template) renderComponent(buf *bytes.Buffer, name, componentID string, componentBody string) error {
+	fle, err := os.Open(filepath.Join(t.componentsFolder, strings.ToLower(name)+t.ext))
+	if err != nil {
+		return fmt.Errorf("cant open component template: %w", err)
+	}
+
+	_, err = buf.WriteString(fmt.Sprintf("{{ $args%s := (componentData $ %q) }}\n", componentID, componentID))
+	if err != nil {
+		return fmt.Errorf("renderComponent %q: %w", name, err)
+	}
+	src, err := io.ReadAll(fle)
+	if err != nil {
+		return fmt.Errorf("renderComponent %q: %w", name, err)
+	}
+
+	src = bytes.Replace(src, []byte("@args."), []byte(fmt.Sprintf("$args%s.Args.", componentID)), -1)
+	src = bytes.Replace(src, []byte("@body"), []byte(componentBody), 1)
+
+	_, err = buf.Write(src)
+	if err != nil {
+		return fmt.Errorf("renderComponent %q : %w", name, err)
 	}
 
 	return nil

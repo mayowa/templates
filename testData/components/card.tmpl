@@ -1,8 +1,6 @@
 <div class="isCard">
-	<h1>{{.Args.title}}</h1>
-	{{with .Body}}
+	<h1>{{@args.title}}</h1>
 	<div>
-		{{- . | html -}}
+		@body
 	</div>
-	{{end}}
 </div>
