@@ -2,6 +2,7 @@ package templates
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -10,12 +11,49 @@ import (
 
 var reTag = regexp.MustCompile(`</* *([A-Z][a-z-]+) *([\w\W]*?) *>`)
 
+type ArgMap map[string]string
+
+func (m ArgMap) ArgPairs() string {
+	retv := []string{}
+	for k, v := range m {
+		retv = append(retv, fmt.Sprintf("%q %q", k, v))
+	}
+	return strings.Join(retv, " ")
+}
+
 type Tag struct {
 	loc           []int
 	Name          string
-	Args          map[string]string
+	Args          ArgMap
 	IsSelfClosing bool
 	IsEnd         bool
+}
+
+func findNextTag(content []byte) (*Tag, error) {
+	var err error
+	loc := reTag.FindSubmatchIndex(content)
+	if loc == nil {
+		return nil, nil
+	}
+
+	t := new(Tag)
+	t.loc = loc
+	t.Name = string(content[loc[2]:loc[3]])
+	t.IsSelfClosing = strings.HasSuffix(string(content[loc[0]:loc[1]]), "/>")
+	t.IsEnd = strings.HasPrefix(string(content[loc[0]:loc[1]]), "</")
+
+	// parse arguments
+	if len(loc) > 4 && !t.IsEnd {
+		args := string(content[loc[4]:loc[5]])
+
+		scan := scanner.NewScanner(bytes.NewBufferString(args))
+		t.Args, err = scan.ParseTagArgs()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return t, nil
 }
 
 func findAllTags(content []byte) (tags []*Tag, err error) {
@@ -42,23 +80,4 @@ func findAllTags(content []byte) (tags []*Tag, err error) {
 	}
 
 	return tags, nil
-}
-
-type tagInfo struct {
-	name        string
-	selfClosing bool
-}
-
-func getTagInfo(re *regexp.Regexp, l []int, txt []byte) *tagInfo {
-	nTxt := txt[l[0]:l[1]]
-	loc := re.FindSubmatchIndex(nTxt)
-	if loc == nil {
-		return nil
-	}
-	ti := &tagInfo{
-		name:        strings.ToLower(string(nTxt[loc[2]:loc[3]])),
-		selfClosing: strings.HasSuffix(string(nTxt[loc[0]:loc[1]]), "/>"),
-	}
-
-	return ti
 }

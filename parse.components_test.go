@@ -6,6 +6,62 @@ import (
 	"github.com/go-test/deep"
 )
 
+func Test_findNextTag(t *testing.T) {
+	tests := []struct {
+		Name    string
+		Content []byte
+		Tag     *Tag
+		Error   error
+	}{
+		{
+			Name: "card",
+			Content: []byte(`
+			< Card arg="arg1" age="22" >
+			</Card >
+			`),
+			Tag: &Tag{
+				Name: "Card",
+				Args: map[string]string{"arg": "arg1", "age": "22"},
+			},
+		},
+		{
+			Name: "deck",
+			Content: []byte(`
+			<Deck arg="arg1" />
+			`),
+			Tag: &Tag{
+				Name:          "Deck",
+				Args:          map[string]string{"arg": "arg1"},
+				IsSelfClosing: true,
+			},
+		},
+		{
+			Name: "card ending",
+			Content: []byte(`
+			</Card>			
+			<Deck arg="arg3" ></Deck>
+			`),
+			Tag: &Tag{
+				Name:  "Card",
+				IsEnd: true,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			tag, err := findNextTag(tt.Content)
+			if err != tt.Error {
+				t.Errorf("findNextTag() error = %v, wantErr %v", err, tt.Error)
+			}
+
+			if diff := deep.Equal(tag, tt.Tag); diff != nil {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
 func Test_findAllTags(t *testing.T) {
 	tests := []struct {
 		Name    string
@@ -84,7 +140,7 @@ func Test_findAllTags(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			tag, err := findAllTags(tt.Content)
 			if err != tt.Error {
-				t.Errorf("findNextTag() error = %v, wantErr %v", err, tt.Error)
+				t.Errorf("findAllTags() error = %v, wantErr %v", err, tt.Error)
 			}
 
 			if diff := deep.Equal(tag, tt.Tags); diff != nil {
