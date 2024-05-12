@@ -2,111 +2,46 @@ package templates
 
 import (
 	"bytes"
-	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/mayowa/templates/scanner"
 )
 
-var reTagHead = regexp.MustCompile(`<([A-Z][a-z-]+) *([\w\W]*?) *>`)
-var reTagEnd = regexp.MustCompile(`</([A-Z][a-z-]+)>`)
-var reTagArg = regexp.MustCompile(`([\w\-]+) *= *["|']([\w\W\s]*?)["|']`)
+var reTag = regexp.MustCompile(`</* *([A-Z][a-z-]+) *([\w\W]*?) *>`)
 
 type Tag struct {
-	loc         []int
-	Name        string
-	Args        map[string]string
-	Body        string
-	SelfClosing bool
+	loc           []int
+	Name          string
+	Args          map[string]string
+	IsSelfClosing bool
+	IsEnd         bool
 }
 
-func findNextTag(content []byte) (*Tag, error) {
-	t, err := findTagHead(content)
-	if err != nil {
-		return nil, err
-	}
-	if t == nil {
-		return nil, nil
-	}
+func findAllTags(content []byte) (tags []*Tag, err error) {
+	locs := reTag.FindAllSubmatchIndex(content, -1)
 
-	if t.SelfClosing {
-		t.loc = []int{t.loc[0], t.loc[1]}
-		return t, nil
-	}
+	for _, loc := range locs {
+		t := new(Tag)
+		t.loc = loc
+		t.Name = string(content[loc[2]:loc[3]])
+		t.IsSelfClosing = strings.HasSuffix(string(content[loc[0]:loc[1]]), "/>")
+		t.IsEnd = strings.HasPrefix(string(content[loc[0]:loc[1]]), "</")
 
-	var blockEnd int
-	t.Body, blockEnd, err = getBody(t.Name, content[t.loc[1]:])
-	if err != nil {
-		return nil, err
-	}
-	t.loc = []int{t.loc[0], t.loc[1] + blockEnd}
+		// parse arguments
+		if len(loc) > 4 && !t.IsEnd {
+			args := string(content[loc[4]:loc[5]])
 
-	return t, nil
-}
-
-func findTagHead(content []byte) (*Tag, error) {
-	var err error
-	loc := reTagHead.FindSubmatchIndex(content)
-	if loc == nil {
-		return nil, nil
-	}
-
-	t := new(Tag)
-	t.loc = loc
-	t.Name = string(content[loc[2]:loc[3]])
-	t.SelfClosing = strings.HasSuffix(string(content[loc[0]:loc[1]]), "/>")
-	if len(loc) > 4 {
-		args := string(content[loc[4]:loc[5]])
-		if t.SelfClosing {
-			args = string(content[loc[4] : loc[5]-1])
+			scan := scanner.NewScanner(bytes.NewBufferString(args))
+			t.Args, err = scan.ParseTagArgs()
+			if err != nil {
+				return nil, err
+			}
 		}
-		scan := scanner.NewScanner(bytes.NewBufferString(args))
-		t.Args, err = scan.ParseTagArgs()
-		if err != nil {
-			return nil, err
-		}
+		tags = append(tags, t)
 	}
 
-	head := string(content[loc[0]:loc[1]])
-	if strings.HasSuffix(head, "/>") {
-		t.SelfClosing = true
-	}
-
-	return t, nil
-}
-
-func parseArgs(args string) map[string]string {
-	retv := map[string]string{}
-	locs := reTagArg.FindAllIndex([]byte(args), -1)
-	for _, l := range locs {
-		p := strings.Split(args[l[0]:l[1]], "=")
-		if len(p) != 2 {
-			continue
-		}
-
-		val := strings.TrimRight(strings.TrimLeft(strings.TrimSpace(p[1]), `"''`), `"''`)
-		retv[strings.TrimSpace(p[0])] = val
-	}
-
-	return retv
-}
-
-func getBody(tagName string, content []byte) (string, int, error) {
-	locs := findTagHeads(tagName, content)
-	headTagsFound := len(locs)
-
-	// find closing tags
-	locs = findTagEnds(tagName, content)
-	if locs == nil || len(locs) != headTagsFound+1 {
-		return "", -1, fmt.Errorf("cant find closing tag for <%s>", tagName)
-	}
-
-	// extract body
-	lastEndTag := locs[len(locs)-1]
-	body := string(content[:lastEndTag[0]])
-
-	return body, lastEndTag[1], nil
+	return tags, nil
 }
 
 type tagInfo struct {
@@ -126,40 +61,4 @@ func getTagInfo(re *regexp.Regexp, l []int, txt []byte) *tagInfo {
 	}
 
 	return ti
-}
-
-func findTagHeads(tagName string, content []byte) [][]int {
-	tagName = strings.ToLower(tagName)
-	locs := reTagHead.FindAllIndex(content, -1)
-	if locs == nil {
-		return nil
-	}
-
-	var retv [][]int
-	for _, l := range locs {
-		ti := getTagInfo(reTagHead, l, content)
-		if ti != nil && ti.name == tagName && !ti.selfClosing {
-			retv = append(retv, l)
-		}
-	}
-
-	return retv
-}
-
-func findTagEnds(tagName string, content []byte) [][]int {
-	tagName = strings.ToLower(tagName)
-	locs := reTagEnd.FindAllIndex(content, -1)
-	if locs == nil {
-		return nil
-	}
-
-	var retv [][]int
-	for _, l := range locs {
-		ti := getTagInfo(reTagEnd, l, content)
-		if ti != nil && ti.name == tagName {
-			retv = append(retv, l)
-		}
-	}
-
-	return retv
 }
