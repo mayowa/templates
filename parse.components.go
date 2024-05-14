@@ -16,7 +16,13 @@ type ArgMap map[string]string
 func (m ArgMap) ArgPairs() string {
 	retv := []string{}
 	for k, v := range m {
-		retv = append(retv, fmt.Sprintf("%q %q", k, v))
+		v = strings.TrimSpace(v)
+		if strings.HasPrefix(v, "{{") && strings.HasSuffix(v, "}}") {
+			v = strings.Trim(v, "{}")
+			retv = append(retv, fmt.Sprintf("%q (print %s)", k, v))
+		} else {
+			retv = append(retv, fmt.Sprintf("%q %q", k, v))
+		}
 	}
 	return strings.Join(retv, " ")
 }

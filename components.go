@@ -11,6 +11,8 @@ import (
 type ComponentRenderer func(wr io.Writer, tag *Tag, tpl *template.Template) error
 
 func (t *Template) processComponentsInTemplate(contents *[]byte) error {
+	// return nil
+
 	if t.componentTemplates == nil {
 		return nil
 	}
@@ -29,7 +31,7 @@ func (t *Template) processComponentsInTemplate(contents *[]byte) error {
 		cName := strings.ToLower(cTag.Name)
 
 		args := fmt.Sprintf(`(map "_isSelfClosing" %v "_isEnd" %v %s)`, cTag.IsSelfClosing, cTag.IsEnd, cTag.Args.ArgPairs())
-		buf.WriteString(`{{ template components/"` + cName + `" ` + args + ` }}`)
+		buf.WriteString(`{{ component "` + cName + `" ` + args + ` }}`)
 
 		// replace rendered component with tag block
 		start := cTag.loc[0]

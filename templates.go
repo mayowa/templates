@@ -38,12 +38,14 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 	t.cache = make(map[string]*template.Template)
 
 	t.sharedFolder = filepath.Join(t.root, "shared")
-	if err := t.init(); err != nil {
+	if err = t.init(); err != nil {
 		return nil, err
 	}
 
 	t.components = make(map[string]ComponentRenderer)
 	t.FuncMap["html"] = func(v string) template.HTML { return template.HTML(v) }
+	t.FuncMap["map"] = aMap
+	t.FuncMap["component"] = t.component
 
 	// components templates
 	componentsFolder := "components"

@@ -1,10 +1,11 @@
 <div>
-	<Card title="this cards title">
-		<p>its a brand new day</p>
-		<Card title="a that is self enclosed and nested" />
-		<h2>Another one?</h2>
-		<Card title="nested dolls..." age="21">
-			here we come.... wait are we russian??
-		</Card>
-	</Card>
+    {{ $title := "a that is self enclosed and nested"}}
+    {{ component "card" (map "_isSelfClosing" false "_isEnd" false "title" "this cards title") }}
+	<p>its a brand new day</p>
+    {{ component "card" (map "_isSelfClosing" true "_isEnd" false "title" (print $title)) }}
+	<h2>Another one?</h2>
+    {{ component "card" (map "_isSelfClosing" false "_isEnd" false "title" "nested dolls..." "age" "21") }}
+	here we come.... wait are we russian??
+    {{ component "card" (map "_isSelfClosing" false "_isEnd" true ) }}
+    {{ component "card" (map "_isSelfClosing" false "_isEnd" true ) }}
 </div>
