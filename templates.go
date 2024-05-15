@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -67,11 +69,11 @@ func (t *Template) RegisterComponentRenderer(name string, renderer ComponentRend
 	return nil
 }
 
-func (t *Template) Render(out io.Writer, layout, name string, data any) error {
-	return t.RenderFiles(out, data, layout, name)
+func (t *Template) Render(out io.Writer, name string, data any) error {
+	return t.RenderFiles(out, data, name)
 }
 
-func (t *Template) RenderFiles(out io.Writer, data any, layout, name string, others ...string) error {
+func (t *Template) RenderFiles(out io.Writer, data any, name string, others ...string) error {
 	var (
 		err   error
 		found bool
@@ -86,7 +88,7 @@ func (t *Template) RenderFiles(out io.Writer, data any, layout, name string, oth
 
 	if !found {
 		others = append([]string{name}, others...)
-		tpl, err = t.parse(layout, others...)
+		tpl, err = t.parse(others...)
 		if err != nil {
 			return err
 		}
@@ -177,7 +179,7 @@ func (t *Template) pathExists(name string) bool {
 	return true
 }
 
-func (t *Template) parse(layout string, names ...string) (*template.Template, error) {
+func (t *Template) parse(names ...string) (*template.Template, error) {
 	if len(names) == 0 {
 		return nil, errors.New("templates not specified")
 	}
@@ -187,13 +189,15 @@ func (t *Template) parse(layout string, names ...string) (*template.Template, er
 		names = names[1:]
 	}
 
-	layoutFleName := filepath.Join(t.root, layout+t.ext)
 	templateName := filepath.Join(t.root, name+t.ext)
+	layoutFleName, err := t.extractLayout(name)
+	if err != nil && !errors.Is(err, ErrLayoutNotFound) {
+		return nil, err
+	}
 
 	var files []string
-	if layout != "" {
-		files = append(files, layoutFleName)
-	}
+
+	files = append(files, layoutFleName)
 
 	if t.isFolder(name) {
 		filenames, err := t.findFiles(filepath.Join(t.root, name), t.ext)
@@ -201,6 +205,11 @@ func (t *Template) parse(layout string, names ...string) (*template.Template, er
 			return nil, err
 		}
 		t.sortBlockFiles(name, filenames)
+		filenames[0], err = t.extractLayout(filenames[0])
+		if err != nil && !errors.Is(err, ErrLayoutNotFound) {
+			return nil, err
+		}
+
 		files = append(files, filenames...)
 	} else {
 		files = append(files, templateName)
@@ -216,6 +225,38 @@ func (t *Template) parse(layout string, names ...string) (*template.Template, er
 	}
 
 	return tpl, nil
+}
+
+var extendsRe = regexp.MustCompile(`{{/\*\s*extends?\s*"(.*)"\s*\*/}}`)
+
+var ErrLayoutNotFound = errors.New("layout not found")
+
+func (t *Template) extractLayout(name string) (string, error) {
+	if t.isFolder(name) {
+		return "", ErrLayoutNotFound
+	}
+
+	fle, err := os.Open(filepath.Join(t.root, name+t.ext))
+	if err != nil {
+		return "", err
+	}
+	defer fle.Close()
+
+	var src string
+	scan := bufio.NewScanner(fle)
+	for i := 0; scan.Scan(); i++ {
+		src += scan.Text() + "\n"
+		if i > 9 {
+			break
+		}
+	}
+
+	match := extendsRe.FindStringSubmatch(src)
+	if len(match) < 2 {
+		return "", ErrLayoutNotFound
+	}
+
+	return filepath.Join(match[1], t.ext), nil
 }
 
 func (t *Template) sortBlockFiles(blockName string, files []string) {
