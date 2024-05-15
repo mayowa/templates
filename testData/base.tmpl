@@ -1,4 +1,9 @@
-base layout
-{{- block "content" .}}
-<!-- Fallback, if "content" is not defined elsewhere -->
-{{end -}}
+
+{{ define "main" }}
+  nested stuff
+  
+  base layout
+  {{- block "content" .}}
+  <!-- Fallback, if "content" is not defined elsewhere -->
+  {{end -}}
+
