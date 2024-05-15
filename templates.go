@@ -256,7 +256,7 @@ func (t *Template) extractLayout(name string) (string, error) {
 		return "", ErrLayoutNotFound
 	}
 
-	return filepath.Join(match[1], t.ext), nil
+	return filepath.Join(t.root, match[1]+t.ext), nil
 }
 
 func (t *Template) sortBlockFiles(blockName string, files []string) {

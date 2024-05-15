@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,9 +28,9 @@ func TestNewTemplates(t *testing.T) {
 	d := struct{ Name string }{Name: "philippta"}
 	err = tpl.Render(buff, "profile", d)
 	require.NoError(t, err)
-	assert.Equal(t,
-		"base layout\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
-		buff.String())
+	assert.Nil(t, deep.Equal(
+		"cast layout\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
+		buff.String()))
 
 }
 
