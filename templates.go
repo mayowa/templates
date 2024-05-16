@@ -69,11 +69,11 @@ func (t *Template) RegisterComponentRenderer(name string, renderer ComponentRend
 	return nil
 }
 
-func (t *Template) Render(out io.Writer, name string, data any) error {
-	return t.RenderFiles(out, data, name)
+func (t *Template) Render(out io.Writer, layout string, name string, data any) error {
+	return t.RenderFiles(out, data, layout, name)
 }
 
-func (t *Template) RenderFiles(out io.Writer, data any, name string, others ...string) error {
+func (t *Template) RenderFiles(out io.Writer, data any, layout string, name string, others ...string) error {
 	var (
 		err   error
 		found bool
@@ -88,7 +88,7 @@ func (t *Template) RenderFiles(out io.Writer, data any, name string, others ...s
 
 	if !found {
 		others = append([]string{name}, others...)
-		tpl, err = t.parse(others...)
+		tpl, err = t.parse(layout, others...)
 		if err != nil {
 			return err
 		}
@@ -174,7 +174,7 @@ func (t *Template) pathExists(name string) bool {
 	return err == nil
 }
 
-func (t *Template) parse(templates ...string) (*template.Template, error) {
+func (t *Template) parse(layout string, templates ...string) (*template.Template, error) {
 	if len(templates) == 0 {
 		return nil, errors.New("templates not specified")
 	}
@@ -185,7 +185,15 @@ func (t *Template) parse(templates ...string) (*template.Template, error) {
 	}
 
 	templateName := filepath.Join(t.root, name+t.ext)
-	layoutFleName, err := t.extractLayout(name)
+	var layoutFleName string
+	var err error
+
+	if layout == "" {
+		layoutFleName, err = t.extractLayout(name)
+	} else {
+		layoutFleName = filepath.Join(t.root, layout+t.ext)
+	}
+
 	if err != nil && !errors.Is(err, ErrLayoutNotFound) {
 		return nil, err
 	}
