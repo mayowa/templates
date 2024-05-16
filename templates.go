@@ -188,7 +188,7 @@ func (t *Template) parse(layout string, templates ...string) (*template.Template
 	var layoutFleName string
 	var err error
 
-	if layout == "" {
+	if layout == "" && !t.isFolder(name) {
 		layoutFleName, err = t.extractLayout(name)
 	} else {
 		layoutFleName = filepath.Join(t.root, layout+t.ext)
@@ -215,10 +215,10 @@ func (t *Template) parse(layout string, templates ...string) (*template.Template
 			if err != nil && !errors.Is(err, ErrLayoutNotFound) {
 				return nil, err
 			}
+		}
 
-			if layoutFleName != "" {
-				filenames = append([]string{layoutFleName}, filenames...)
-			}
+		if layoutFleName != "" {
+			filenames = append([]string{layoutFleName}, filenames...)
 		}
 
 		files = append(files, filenames...)
