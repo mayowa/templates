@@ -109,11 +109,8 @@ func (t *Template) Exists(name string) bool {
 	t.mtx.RLock()
 	_, found = t.cache[name]
 	t.mtx.RUnlock()
-	if found {
-		return true
-	}
 
-	return false
+	return found
 }
 
 func (t *Template) String(layout, src string, data any) (string, error) {
@@ -173,11 +170,8 @@ func (t *Template) isFolder(name string) bool {
 
 func (t *Template) pathExists(name string) bool {
 	_, err := os.Stat(name)
-	if err != nil {
-		return false
-	}
 
-	return true
+	return err == nil
 }
 
 func (t *Template) parse(templates ...string) (*template.Template, error) {
