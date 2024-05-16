@@ -100,6 +100,7 @@ func (t *Template) RenderFiles(out io.Writer, data any, name string, others ...s
 
 	return tpl.Execute(out, data)
 }
+
 func (t *Template) Exists(name string) bool {
 	var (
 		found bool
@@ -196,8 +197,9 @@ func (t *Template) parse(templates ...string) (*template.Template, error) {
 	}
 
 	var files []string
-
-	files = append(files, layoutFleName)
+	if layoutFleName != "" {
+		files = append(files, layoutFleName)
+	}
 
 	if t.isFolder(name) {
 		filenames, err := t.findFiles(filepath.Join(t.root, name), t.ext)
