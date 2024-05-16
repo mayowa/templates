@@ -179,14 +179,14 @@ func (t *Template) pathExists(name string) bool {
 	return true
 }
 
-func (t *Template) parse(names ...string) (*template.Template, error) {
-	if len(names) == 0 {
+func (t *Template) parse(templates ...string) (*template.Template, error) {
+	if len(templates) == 0 {
 		return nil, errors.New("templates not specified")
 	}
 
-	name := names[0]
-	if len(names) > 1 {
-		names = names[1:]
+	name := templates[0]
+	if len(templates) > 1 {
+		templates = templates[1:]
 	}
 
 	templateName := filepath.Join(t.root, name+t.ext)
@@ -213,6 +213,10 @@ func (t *Template) parse(names ...string) (*template.Template, error) {
 		files = append(files, filenames...)
 	} else {
 		files = append(files, templateName)
+	}
+
+	if len(templates) > 0 {
+		files = append(files, templates...)
 	}
 
 	tpl, err := t.parseFiles(nil, t.readFileOS, files...)
