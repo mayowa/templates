@@ -209,9 +209,16 @@ func (t *Template) parse(layout string, templates ...string) (*template.Template
 			return nil, err
 		}
 		t.sortBlockFiles(name, filenames)
-		filenames[0], err = t.extractLayout(filenames[0])
-		if err != nil && !errors.Is(err, ErrLayoutNotFound) {
-			return nil, err
+
+		if layout == "" {
+			layoutFleName, err = t.extractLayout(strings.TrimSuffix(name+"/"+filepath.Base(filenames[0]), t.ext))
+			if err != nil && !errors.Is(err, ErrLayoutNotFound) {
+				return nil, err
+			}
+
+			if layoutFleName != "" {
+				filenames = append([]string{layoutFleName}, filenames...)
+			}
 		}
 
 		files = append(files, filenames...)
@@ -219,7 +226,7 @@ func (t *Template) parse(layout string, templates ...string) (*template.Template
 		files = append(files, templateName)
 	}
 
-	if len(templates) > 0 {
+	if len(templates) > 1 {
 		files = append(files, templates...)
 	}
 
