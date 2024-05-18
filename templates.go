@@ -37,6 +37,10 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 		t.ext = "." + ext
 	}
 	t.FuncMap = funcMap
+	if t.FuncMap == nil {
+		t.FuncMap = make(template.FuncMap)
+	}
+
 	t.cache = make(map[string]*template.Template)
 
 	t.sharedFolder = filepath.Join(t.root, "shared")
