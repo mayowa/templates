@@ -73,32 +73,39 @@ func (t *Template) RegisterComponentRenderer(name string, renderer ComponentRend
 	return nil
 }
 
-func (t *Template) Render(out io.Writer, layout string, name string, data any) error {
-	return t.RenderFiles(out, data, layout, name)
+func (t *Template) Render(out io.Writer, name string, data any) error {
+	return t.RenderFiles(out, data, name)
 }
 
-func (t *Template) RenderFiles(out io.Writer, data any, layout string, name string, others ...string) error {
+var ErrNoTemplates = errors.New("no templates")
+
+func (t *Template) RenderFiles(out io.Writer, data any, templates ...string) error {
 	var (
 		err   error
 		found bool
 		tpl   *template.Template
 	)
 
+	if len(templates) == 0 {
+		return ErrNoTemplates
+	}
+
+	baseTpl := templates[0]
+
 	if !t.Debug {
 		t.mtx.RLock()
-		tpl, found = t.cache[name]
+		tpl, found = t.cache[baseTpl]
 		t.mtx.RUnlock()
 	}
 
 	if !found {
-		others = append([]string{name}, others...)
-		tpl, err = t.parse(layout, others...)
+		tpl, err = t.parse(templates...)
 		if err != nil {
 			return err
 		}
 
 		t.mtx.Lock()
-		t.cache[name] = tpl
+		t.cache[baseTpl] = tpl
 		t.mtx.Unlock()
 	}
 
@@ -178,66 +185,46 @@ func (t *Template) pathExists(name string) bool {
 	return err == nil
 }
 
-func (t *Template) parse(layout string, templates ...string) (*template.Template, error) {
-	if len(templates) == 0 {
-		return nil, errors.New("templates not specified")
-	}
+func (t *Template) parse(files ...string) (*template.Template, error) {
+	var (
+		err      error
+		fileList []string
+	)
 
-	name := templates[0]
-	if len(templates) > 1 {
-		templates = templates[1:]
-	}
+	baseTpl := files[0]
 
-	templateName := filepath.Join(t.root, name+t.ext)
-	var layoutFleName string
-	var err error
-
-	if layout == "" && !t.isFolder(name) {
-		layoutFleName, err = t.extractLayout(name)
-	} else {
-		layoutFleName = filepath.Join(t.root, layout+t.ext)
-	}
-
-	if err != nil && !errors.Is(err, ErrLayoutNotFound) {
-		return nil, err
-	}
-
-	var files []string
-	if layoutFleName != "" {
-		files = append(files, layoutFleName)
-	}
-
-	if t.isFolder(name) {
-		filenames, err := t.findFiles(filepath.Join(t.root, name), t.ext)
+	if t.isFolder(baseTpl) {
+		blockFiles, err := t.findFiles(filepath.Join(t.root, baseTpl), t.ext)
 		if err != nil {
 			return nil, err
 		}
-		t.sortBlockFiles(name, filenames)
+		t.sortBlockFiles(baseTpl, blockFiles)
 
-		if layout == "" {
-			layoutFleName, err = t.extractLayout(strings.TrimSuffix(name+"/"+filepath.Base(filenames[0]), t.ext))
-			if err != nil && !errors.Is(err, ErrLayoutNotFound) {
-				return nil, err
-			}
+		fileList = append(fileList, blockFiles...)
+		if len(files) > 1 {
+			fileList = append(fileList, files[1:]...)
 		}
-
-		if layoutFleName != "" {
-			filenames = append([]string{layoutFleName}, filenames...)
-		}
-
-		files = append(files, filenames...)
 	} else {
-		files = append(files, templateName)
+		layout, err := t.extractLayout(baseTpl)
+		if err != nil && !errors.Is(err, ErrLayoutNotFound) {
+			return nil, err
+		}
+
+		// if we have a layout at this point, add it to the fileList
+		if layout != "" {
+			fileList = append(fileList, layout)
+		}
+
+		fileList = append(fileList, files...)
 	}
 
-	if len(templates) > 1 {
-		files = append(files, templates...)
-	}
-
-	tpl, err := t.parseFiles(nil, t.readFileOS, files...)
+	// parse templates
+	tpl, err := t.parseFiles(nil, t.readFileOS, fileList...)
 	if err != nil {
 		return nil, err
 	}
+
+	// parse shared templates
 	filenames, _ := t.findFiles(t.sharedFolder, t.ext)
 	if len(filenames) > 0 {
 		return t.parseFiles(tpl, t.readFileOS, filenames...)
