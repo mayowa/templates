@@ -215,7 +215,10 @@ func (t *Template) parse(files ...string) (*template.Template, error) {
 			fileList = append(fileList, layout)
 		}
 
-		fileList = append(fileList, files...)
+		// add file paths to file list instead of just file names
+		for _, fileName := range files {
+			fileList = append(fileList, filepath.Join(t.root, fileName+t.ext))
+		}
 	}
 
 	// parse templates
