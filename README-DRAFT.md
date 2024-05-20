@@ -1,6 +1,6 @@
 # Templates
 
-This library is a lightweight templating package designed for use with Echo(link) but which can also be used standalone (Can it? Well duh. Do you use Echo in the tests? It just extends the stdlib, as long as you call Render it'll do its job).
+This library is a lightweight package that adds convenience features to the standard library's template system.
 
 # Why?
 
@@ -8,30 +8,32 @@ Templates has two primary goals:
 
 - Make your templates easy to write
 - Make your templates easy to read by abstracting away repetitive markup
-  Templates makes your life easy without being complex! You can get psuedo-inheritance like this:
+- Templates makes your life easy without being complex! You can render a template like this:
 
 ```go
+// create a template struct
 tmpl := template.New(root, extension)
 
-// render the index template usinge the "default" layout
-tmpl.Render("default","index")
+// render the index template
+tmpl.Render(io.Writer, "index", data)
 ```
 
-If your default template looks like this:
+This package provides pseudo - inheritance capabilities. By placing an "extends" directive in a comment at the top of your template file, you can specify another template as a layout. Here's an example. If your index template looks like this:
 
 ```tmpl
-// default.tmpl
+// index.tmpl
+{{/* extends default */  }}
+{{ define "content" . }} World {{ end }}
+```
+
+And your default template looks like this:
+
+```tmpl
+//default.tmpl
 Hello {{ block "content" . }} {{ end }}!
 ```
 
-And your index template looks like this:
-
-```tmpl
-//index.tmpl
-{{ define "content" }} World {{ end }}
-```
-
-Then templates will render output that looks like this:
+Then calling `tmpl.Render` will output something like this:
 
 ```tmpl
 //output
@@ -63,11 +65,13 @@ tmpl.Render(io.Writer, "layout","settings")
 
 ## Things to note
 
-- Any templates inside a `templateRoot/shared` folder will be parsed on every call to Render
+- When Render is parsing the templates passed to it, all templates inside the `templateRoot/shared` folder will be parsed alongside the templates you pass.
 - Don't add the file extension to template names when calling Render or referencing one from a template
 - A string can be rendered as a template like any other
-- Folders (other than those in shared) can treated as a group of templates.
-- If a template with the same name as the folder exists in the folder, it is parsed first
+- If you pass the name of a folder to Render, all templates inside that folder are parsed as a group. If a file `folderName/folderName.ext` exists, it will be parsed first and treated as the layout for all other files inside `folderName`.
+- Need to work out folders
+- Need to edit the examples to reflect the new render/layout method
+- Components
 
 # Example folder structure
 
