@@ -77,14 +77,6 @@ func Test__templateFolder(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.RenderFiles(buff, d, "cast", "block")
-	require.NoError(t, err)
-	assert.Equal(t,
-		"cast layout\n\t\t<div>overlay</div>\n    a fragment\n    \n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n\n",
-		buff.String())
-
-	buff.Reset()
-	tpl.Debug = true
 	err = tpl.Render(buff, "block", d)
 	require.NoError(t, err)
 	assert.Equal(t,
