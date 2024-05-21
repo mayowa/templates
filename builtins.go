@@ -36,7 +36,7 @@ func ifZero(src any, def any) any {
 	vs := reflect.ValueOf(src)
 	vs = reflect.Indirect(vs)
 
-	if vs.IsZero() || vs.IsNil() {
+	if vs.IsZero() {
 		return def
 	}
 
