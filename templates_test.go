@@ -26,7 +26,7 @@ func TestNewTemplates(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "", "profile", d)
+	err = tpl.Render(buff, "profile", d)
 	require.NoError(t, err)
 	assert.Nil(t, deep.Equal(
 		"cast layout\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
@@ -41,7 +41,7 @@ func Test_templateCache(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "", "profile", d)
+	err = tpl.Render(buff, "profile", d)
 	require.NoError(t, err)
 	assert.Contains(t, tpl.cache, "profile")
 
@@ -49,7 +49,7 @@ func Test_templateCache(t *testing.T) {
 	require.NoError(t, err)
 
 	tpl.Debug = true
-	err = tpl.Render(buff, "", "profile", d)
+	err = tpl.Render(buff, "profile", d)
 	require.NoError(t, err)
 	assert.Contains(t, tpl.cache, "profile")
 }
@@ -61,7 +61,7 @@ func Test__noTemplate(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "", "info", d)
+	err = tpl.Render(buff, "info", d)
 	require.NoError(t, err)
 
 	require.NoError(t, err)
@@ -77,15 +77,7 @@ func Test__templateFolder(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "cast", "block", d)
-	require.NoError(t, err)
-	assert.Equal(t,
-		"cast layout\n\t\t<div>overlay</div>\n    a fragment\n    \n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n\n",
-		buff.String())
-
-	buff.Reset()
-	tpl.Debug = true
-	err = tpl.Render(buff, "", "block", d)
+	err = tpl.Render(buff, "block", d)
 	require.NoError(t, err)
 	assert.Equal(t,
 		"the index\n\t\t<div>overlay</div>\n    a fragment\n    \n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n\n",
@@ -99,7 +91,7 @@ func Test__templateInsideAFolder(t *testing.T) {
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
-	err = tpl.Render(buff, "", "block/fragment", nil)
+	err = tpl.Render(buff, "block/fragment", nil)
 	require.NoError(t, err)
 	assert.Equal(t,
 		"a fragment", buff.String())
@@ -157,7 +149,7 @@ func TestTemplate_Lookup(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "", "block", d)
+	err = tpl.Render(buff, "block", d)
 	require.NoError(t, err)
 	assert.True(t, tpl.Exists("block"))
 }
@@ -170,7 +162,7 @@ func TestTemplate_NoShared(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "", "solo", d)
+	err = tpl.Render(buff, "solo", d)
 	require.NoError(t, err)
 	assert.Equal(t, "philippta, This is solo act!", buff.String())
 }
@@ -180,7 +172,7 @@ func Test_Components(t *testing.T) {
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
-	err = tpl.Render(buff, "", "comp-demo", nil)
+	err = tpl.Render(buff, "comp-demo", nil)
 	require.NoError(t, err)
 	t.Log(buff.String())
 
@@ -201,7 +193,7 @@ func Test_ComponentRenderer(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	err = tpl.Render(buff, "", "comp-renderer", nil)
+	err = tpl.Render(buff, "comp-renderer", nil)
 	require.NoError(t, err)
 	t.Log(buff.String())
 }
