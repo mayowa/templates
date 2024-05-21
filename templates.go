@@ -50,6 +50,8 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 	t.FuncMap["html"] = func(v string) template.HTML { return template.HTML(v) }
 	t.FuncMap["map"] = aMap
 	t.FuncMap["component"] = t.component
+	t.FuncMap["replaceStr"] = replaceStr
+	t.FuncMap["defaultTo"] = ifZero
 
 	// components templates
 	componentsFolder := "components"

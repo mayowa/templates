@@ -3,6 +3,8 @@ package templates
 import (
 	"bytes"
 	"html/template"
+	"reflect"
+	"strings"
 )
 
 func (t *Template) component(name string, args map[any]any) template.HTML {
@@ -27,4 +29,19 @@ func aMap(args ...any) map[any]interface{} {
 	}
 
 	return retv
+}
+
+func ifZero(src any, def any) any {
+	vs := reflect.ValueOf(src)
+	vs = reflect.Indirect(vs)
+
+	if vs.IsZero() || vs.IsNil() {
+		return def
+	}
+
+	return src
+}
+
+func replaceStr(str, old, new string) string {
+	return strings.Replace(str, old, new, -1)
 }
