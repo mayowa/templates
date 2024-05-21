@@ -52,6 +52,7 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 	t.FuncMap["component"] = t.component
 	t.FuncMap["replaceStr"] = replaceStr
 	t.FuncMap["defaultTo"] = ifZero
+	t.FuncMap["attributeSet"] = attributes
 
 	// components templates
 	componentsFolder := "components"
