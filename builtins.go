@@ -33,6 +33,10 @@ func aMap(args ...any) map[any]interface{} {
 }
 
 func ifZero(src any, def any) any {
+	if src == nil {
+		return ""
+	}
+
 	vs := reflect.ValueOf(src)
 	vs = reflect.Indirect(vs)
 
@@ -49,12 +53,14 @@ func replaceStr(str, old, new string) string {
 
 type HTMLAttributes map[string]string
 
-func attributes() HTMLAttributes {
-	return make(HTMLAttributes)
+func attributes() *HTMLAttributes {
+	a := make(HTMLAttributes)
+	return &a
 }
 
-func (a *HTMLAttributes) Set(key, value string) {
+func (a *HTMLAttributes) Set(key, value string) string {
 	(*a)[key] = value
+	return ""
 }
 
 func (a *HTMLAttributes) Render() template.HTMLAttr {
