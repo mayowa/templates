@@ -24,7 +24,6 @@ type Template struct {
 	cache              map[string]*template.Template
 	mtx                sync.RWMutex
 	Debug              bool
-	components         map[string]ComponentRenderer
 	componentTemplates *template.Template
 }
 
@@ -48,7 +47,6 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 		return nil, err
 	}
 
-	t.components = make(map[string]ComponentRenderer)
 	t.FuncMap["html"] = func(v string) template.HTML { return template.HTML(v) }
 	t.FuncMap["map"] = aMap
 	t.FuncMap["component"] = t.component
@@ -65,11 +63,6 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 }
 
 func (t *Template) init() error {
-	return nil
-}
-
-func (t *Template) RegisterComponentRenderer(name string, renderer ComponentRenderer) error {
-	t.components[name] = renderer
 	return nil
 }
 

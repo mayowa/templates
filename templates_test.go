@@ -3,7 +3,6 @@ package templates
 import (
 	"bytes"
 	"html/template"
-	"io"
 	"strings"
 	"testing"
 
@@ -182,12 +181,6 @@ func Test_ComponentRenderer(t *testing.T) {
 	buff := bytes.NewBuffer(nil)
 	tpl, err := New("./testData", "tmpl", fm)
 	require.NoError(t, err)
-	err = tpl.RegisterComponentRenderer("box", func(wr io.Writer, tag *Tag, tpl *template.Template) error {
-		if err := tpl.Execute(wr, map[string]any{"tag": tag, "foo": "bar"}); err != nil {
-			return err
-		}
-		return nil
-	})
 
 	if err != nil {
 		t.Fatal(err.Error())

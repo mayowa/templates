@@ -1,1 +1,5 @@
-<Box title="this cards title" />
+{{ $cTitle := "Ode to a card"}}
+<Box foo="bar?" title="this cards title" >
+	living large within a Box!!
+	<Card title="{{ $cTitle }}">A card within a box?</Card>
+</Box>

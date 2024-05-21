@@ -3,12 +3,8 @@ package templates
 import (
 	"bytes"
 	"fmt"
-	"html/template"
-	"io"
 	"strings"
 )
-
-type ComponentRenderer func(wr io.Writer, tag *Tag, tpl *template.Template) error
 
 func (t *Template) processComponentsInTemplate(contents *[]byte) error {
 	// return nil

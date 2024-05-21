@@ -1,8 +1,7 @@
+{{- if eq ._isEnd false -}}
 <div class="isBox">
-	<h1 class="{{.foo}}">{{.tag.Args.title}}</h1>
-	{{with .tag.Body}}
-	<div >
-		{{- .tag | html -}}
-	</div>
-	{{end}}
+	<h1 class="{{.foo}}">{{.title}}</h1>
+{{- end -}}
+{{- if or ._isEnd ._isSelfClosing -}}
 </div>
+{{- end -}}
