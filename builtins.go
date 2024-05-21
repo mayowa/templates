@@ -2,6 +2,7 @@ package templates
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"reflect"
 	"strings"
@@ -44,4 +45,23 @@ func ifZero(src any, def any) any {
 
 func replaceStr(str, old, new string) string {
 	return strings.Replace(str, old, new, -1)
+}
+
+type HTMLAttributes map[string]string
+
+func attributes() HTMLAttributes {
+	return make(HTMLAttributes)
+}
+
+func (a *HTMLAttributes) Set(key, value string) {
+	(*a)[key] = value
+}
+
+func (a *HTMLAttributes) Render() template.HTMLAttr {
+	out := ""
+	for k, v := range *a {
+		out += fmt.Sprintf("%s=%q ", k, v)
+	}
+
+	return template.HTMLAttr(out)
 }
