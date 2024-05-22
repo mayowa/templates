@@ -184,15 +184,16 @@ func extractArgVal(tokens []*TokenItem) ([]*TokenItem, []*TokenItem, error) {
 	}
 	stringStart := item.Token
 
-	naPos := nextArg(wrkItems)
+	nextArgPos := nextArg(wrkItems)
 	stringEnd := -1
-	if naPos == -1 {
-		// no arg found set to last token
-		naPos = len(wrkItems) - 1
+	if nextArgPos == -1 {
+		// if no arg found, set naPos to the index after the last token
+		nextArgPos = len(wrkItems)
 	}
 
 	// find position of the last quote string
-	for i := naPos - 1; i > 0; i-- {
+	// allow i = 0 because trimWhiteSpace has removed the start quote
+	for i := nextArgPos - 1; i >= 0; i-- {
 		if wrkItems[i].Token == stringStart {
 			stringEnd = i
 			break
@@ -200,7 +201,8 @@ func extractArgVal(tokens []*TokenItem) ([]*TokenItem, []*TokenItem, error) {
 	}
 
 	// if the quote found is the one at the beginning, we have an unterminated string
-	if stringEnd <= 0 || (countToken(stringStart, wrkItems[:stringEnd])%2) != 0 {
+	// allow stringEnd = 0 because  trimWhiteSpace has removed the start quote
+	if stringEnd < 0 || (countToken(stringStart, wrkItems[:stringEnd])%2) != 0 {
 		return nil, nil, fmt.Errorf("unterminated string on line:%d", item.Line)
 	}
 
