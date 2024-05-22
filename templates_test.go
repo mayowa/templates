@@ -173,7 +173,7 @@ func Test_Components(t *testing.T) {
 	buff := bytes.NewBuffer(nil)
 	err = tpl.Render(buff, "comp-demo", nil)
 	require.NoError(t, err)
-	assert.Equal(t, buff.String(), "<div>\n    \n    <div class=\"isCard\">\n\t<h1>this cards title</h1>\n\t<p>its a brand new day</p>\n    <div class=\"isCard\">\n\t<h1>a that is self enclosed and nested</h1></div>\n\t<h2>Another one?</h2>\n    <div class=\"isCard\">\n\t<h1>nested dolls...</h1>\n\there we come.... wait are we russian??\n    </div>\n    </div>\n</div>")
+	assert.Equal(t, buff.String(), "<div>\n    \n    <div class=\"isCard\">\n\t<h1>this cards title</h1>\n\t<p>its a brand new day</p>\n    <div class=\"isCard\">\n\t<h1>a that is self enclosed and nested</h1>\n</div>\n\t<h2>Another one?</h2>\n    <div class=\"isCard\">\n\t<h1>nested dolls...</h1>\n\there we come.... wait are we russian??\n    \n</div>\n    \n</div>\n</div>")
 }
 
 func Test_ComponentRenderer(t *testing.T) {
