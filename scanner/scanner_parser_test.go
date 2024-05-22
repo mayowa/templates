@@ -15,7 +15,7 @@ func TestScanner_ParseTagArgs(t *testing.T) {
 		wantErr  error
 	}{
 		{
-			name:     "test 1",
+			name:     "with nested double quotes",
 			input:    `name=""ayo" and "chidy"" age="21" gen-der="m"`,
 			wantArgs: map[string]string{"name": `"ayo" and "chidy"`, "age": "21", "gen-der": "m"},
 		},
@@ -35,9 +35,14 @@ func TestScanner_ParseTagArgs(t *testing.T) {
 			wantErr: errors.New("unterminated string on line:0"),
 		},
 		{
-			name:    "test 1",
+			name:    "with missing quotes",
 			input:   `name="ayo" and age="21" gen-der="m"`,
 			wantErr: errors.New(`expected '=', found "age"`),
+		},
+		{
+			name:     "with empty string",
+			input:    `name=""`,
+			wantArgs: map[string]string{"name": ""},
 		},
 	}
 
@@ -48,12 +53,11 @@ func TestScanner_ParseTagArgs(t *testing.T) {
 			gotArgs, gotErr := s.ParseTagArgs()
 			if tt.wantErr != nil && gotErr.Error() != tt.wantErr.Error() {
 				t.Fatalf("ParseTagArgs() gotErr = %v, wantErr %v", gotErr, tt.wantErr)
+			} else if tt.wantErr == nil && gotErr != nil {
+				t.Fatalf("Unexpected error in ParseTagArgs(), gotErr = %v", gotErr)
 			}
 
 			if !reflect.DeepEqual(gotArgs, tt.wantArgs) {
-				if gotErr != nil {
-					t.Logf("ParseTagArgs() gotErr = %v", gotErr)
-				}
 				t.Errorf("ParseTagArgs() gotArgs = %v, want %v", gotArgs, tt.wantArgs)
 			}
 
