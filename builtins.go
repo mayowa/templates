@@ -71,3 +71,18 @@ func (a *HTMLAttributes) Render() template.HTMLAttr {
 
 	return template.HTMLAttr(out)
 }
+
+func deDupeString(src string) string {
+	slice := strings.Split(src, " ")
+	seen := make(map[string]bool)
+	result := []string{}
+
+	for _, item := range slice {
+		if _, ok := seen[item]; !ok {
+			seen[item] = true
+			result = append(result, item)
+		}
+	}
+
+	return strings.Join(result, " ")
+}

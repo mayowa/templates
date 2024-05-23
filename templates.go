@@ -53,6 +53,7 @@ func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
 	t.FuncMap["replaceStr"] = replaceStr
 	t.FuncMap["ifZero"] = ifZero
 	t.FuncMap["attributeSet"] = attributes
+	t.FuncMap["deDupeStr"] = deDupeString
 
 	// components templates
 	componentsFolder := "components"
