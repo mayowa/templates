@@ -34,7 +34,7 @@ func aMap(args ...any) map[any]interface{} {
 
 func ifZero(src any, def any) any {
 	if src == nil {
-		return ""
+		return def
 	}
 
 	vs := reflect.ValueOf(src)
