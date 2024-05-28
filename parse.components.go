@@ -19,7 +19,7 @@ func (m ArgMap) ArgPairs() string {
 		v = strings.TrimSpace(v)
 		if strings.HasPrefix(v, "{{") && strings.HasSuffix(v, "}}") {
 			v = strings.Trim(v, "{}")
-			retv = append(retv, fmt.Sprintf("%q (print %s)", k, v))
+			retv = append(retv, fmt.Sprintf("%q %s", k, v))
 		} else {
 			retv = append(retv, fmt.Sprintf("%q %q", k, v))
 		}

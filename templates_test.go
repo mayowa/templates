@@ -191,3 +191,38 @@ func Test_ComponentRenderer(t *testing.T) {
 	t.Log(output)
 	assert.Equal(t, output, "\n<div class=\"isBox\">\n\t<h1 class=\"bar?\">this cards title</h1>\n\tliving large within a Box!!\n\t<div class=\"isCard\">\n\t<h1>Ode to a card</h1>A card within a box?\n</div>\n</div>\n")
 }
+
+func Test_ComplexComponentParams(t *testing.T) {
+	buff := bytes.NewBuffer(nil)
+	tpl, err := New("./testData", "tmpl", fm)
+	require.NoError(t, err)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	type SelectOption struct {
+		Label    string
+		Value    string
+		Selected bool
+		Disabled bool
+	}
+
+	opts := []SelectOption{
+		{"Pick something", "0", true, true},
+		{"Male", "1", false, false},
+		{"Female", "2", false, false},
+	}
+
+	data := map[string]any{
+		"Select": opts,
+	}
+
+	err = tpl.Render(buff, "complex-params", data)
+	require.NoError(t, err)
+	output := buff.String()
+	t.Log(output)
+	assert.Equal(t, "<select \n\t\tname=\"\" \n\t\tid=\"\" \n\t\tclass=\"bg-gray-50 border border-gray-300 text-content text-sm rounded-lg p-2.5 &lt;nil&gt;\"\n\t><option value=\"0\" \n\t\t\t selected  \n\t\t\t disabled  \n\t\t>\n\t\t\tPick something\n\t\t</option><option value=\"1\" \n\t\t\t \n\t\t\t \n\t\t>\n\t\t\tMale\n\t\t</option><option value=\"2\" \n\t\t\t \n\t\t\t \n\t\t>\n\t\t\tFemale\n\t\t</option></select>\n\n",
+		output)
+
+}

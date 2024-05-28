@@ -1,0 +1,40 @@
+{{- /* This component accepts the following params:
+	- id
+	- name
+	- class
+	- opts
+ */ -}}
+
+{{- $class := "bg-gray-50 border border-gray-300 text-content text-sm rounded-lg p-2.5 " -}}
+{{- $id := (ifZero .id .name) -}}
+{{- $class = (print $class .class) -}}
+
+{{- if eq ._isSelfClosing false -}}
+	{{- if eq ._isEnd false -}}		
+		<select 
+			name="{{- .name -}}" 
+			id="{{- $id -}}" 
+			class="{{- $class -}}"
+		>
+	{{- else -}}
+		</select>
+	{{- end -}}
+
+{{- else -}}
+
+	<select 
+		name="{{ .name }}" 
+		id="{{ $id }}" 
+		class="{{ $class }}"
+	>
+	{{- range $opt := .opts -}}
+		<option value="{{ $opt.Value }}" 
+			{{ if $opt.Selected }} selected {{ end }} 
+			{{ if $opt.Disabled }} disabled {{ end }} 
+		>
+			{{ $opt.Label }}
+		</option>
+	{{- end -}}
+	
+	</select>
+{{- end -}}
