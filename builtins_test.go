@@ -1,6 +1,10 @@
 package templates
 
-import "testing"
+import (
+	"fmt"
+	"strings"
+	"testing"
+)
 
 func Test__ifZero(t *testing.T) {
 	tests := []struct {
@@ -125,5 +129,31 @@ func Test__replaceStr(t *testing.T) {
 				t.Errorf("replaceStr() = %v, want %v", got, tt.expect)
 			}
 		})
+	}
+}
+
+func Test__attrRender(t *testing.T) {
+	attrs := map[string]string{
+		"foo": "bar",
+		"abc": "def",
+		"key": "value",
+	}
+
+	attrMap := attributes()
+
+	for k, v := range attrs {
+		attrMap.Set(k, v)
+	}
+
+	renderedAttrs := string(attrMap.Render())
+	if renderedAttrs[len(renderedAttrs)-1] != ' ' {
+		t.Errorf("Trailing whitespace not found in rendered output %s", renderedAttrs)
+	}
+
+	for k, v := range attrs {
+		attrPair := fmt.Sprintf("%s=%q", k, v)
+		if !strings.Contains(renderedAttrs, attrPair) {
+			t.Errorf("Key-Value pair %s not found in rendered string %s", attrPair, renderedAttrs)
+		}
 	}
 }
