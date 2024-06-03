@@ -52,7 +52,6 @@ func Test__ifZero(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func Test__deDupeString(t *testing.T) {
@@ -77,6 +76,48 @@ func Test__deDupeString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := deDupeString(tt.src, tt.sep); got != tt.expect {
 				t.Errorf("deDupeString() = %v, want %v", got, tt.expect)
+			}
+		})
+	}
+}
+
+func Test__replaceStr(t *testing.T) {
+	tests := []struct {
+		name   string
+		src    string
+		old    string
+		new    string
+		expect string
+	}{
+		{
+			name:   "replaces old with new",
+			src:    "foo bar baz foo",
+			old:    "foo",
+			new:    "boo",
+			expect: "boo bar baz boo",
+		},
+
+		{
+			name:   "removes old when new is empty",
+			src:    "foo bar baz",
+			old:    "foo",
+			new:    "",
+			expect: " bar baz",
+		},
+
+		{
+			name:   "doesn't modify string when old is empty",
+			src:    "foo bar baz",
+			old:    "",
+			new:    "boo",
+			expect: "foo bar baz",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := replaceStr(tt.src, tt.old, tt.new); got != tt.expect {
+				t.Errorf("replaceStr() = %v, want %v", got, tt.expect)
 			}
 		})
 	}
