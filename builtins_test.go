@@ -70,6 +70,11 @@ func Test__deDupeString(t *testing.T) {
 			src:    "red bg-red-300 green red",
 			expect: "red bg-red-300 green",
 		},
+		{
+			name:   "doesn't modify src if no duplicates",
+			src:    "red bg-red-300 green",
+			expect: "red bg-red-300 green",
+		},
 	}
 
 	for _, tt := range tests {
