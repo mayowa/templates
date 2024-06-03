@@ -32,6 +32,9 @@ func aMap(args ...any) map[any]interface{} {
 	return retv
 }
 
+// returns a default value (second param)
+// if first param is nil or a zero value
+// else returns first param
 func ifZero(src any, def any) any {
 	if src == nil {
 		return def
@@ -48,6 +51,10 @@ func ifZero(src any, def any) any {
 }
 
 func replaceStr(str, old, new string) string {
+	if old == "" {
+		return str
+	}
+
 	return strings.Replace(str, old, new, -1)
 }
 
