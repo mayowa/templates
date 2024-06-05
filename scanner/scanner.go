@@ -180,7 +180,7 @@ func extractArgVal(tokens []*TokenItem) ([]*TokenItem, []*TokenItem, error) {
 	// Single or Double Quote
 	item, wrkItems := trimWhiteSpace(tokens)
 	if item.Token != TokenSingleQuote && item.Token != TokenDoubleQuote {
-		return nil, nil, fmt.Errorf("expected %s or %s, found %s", TokenSingleQuote, TokenDoubleQuote, item.Token)
+		return nil, nil, fmt.Errorf("extractArgVal() expected %s or %s, found %s", TokenSingleQuote, TokenDoubleQuote, item.Token)
 	}
 	stringStart := item.Token
 
@@ -203,7 +203,7 @@ func extractArgVal(tokens []*TokenItem) ([]*TokenItem, []*TokenItem, error) {
 	// if the quote found is the one at the beginning, we have an unterminated string
 	// allow stringEnd = 0 because  trimWhiteSpace has removed the start quote
 	if stringEnd < 0 || (countToken(stringStart, wrkItems[:stringEnd])%2) != 0 {
-		return nil, nil, fmt.Errorf("unterminated string on line:%d", item.Line)
+		return nil, nil, fmt.Errorf("extractArgVal() found unterminated string on line:%d", item.Line)
 	}
 
 	if stringEnd+1 >= len(wrkItems) {
