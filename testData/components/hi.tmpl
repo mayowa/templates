@@ -1,0 +1,8 @@
+{{- if not ._isEnd -}}
+<div class="isHi">
+	<p> Hi, {{.name}}! </p>
+{{- end -}}
+{{ if or ._isEnd ._isSelfClosing }}
+	<p> Hello, {{.name}}! </p>
+</div>
+{{- end -}}

@@ -197,10 +197,6 @@ func Test_ComplexComponentParams(t *testing.T) {
 	tpl, err := New("./testData", "tmpl", fm)
 	require.NoError(t, err)
 
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
 	type SelectOption struct {
 		Label    string
 		Value    string
@@ -224,5 +220,19 @@ func Test_ComplexComponentParams(t *testing.T) {
 	t.Log(output)
 	assert.Equal(t, "<select \n\t\tname=\"\" \n\t\tid=\"\" \n\t\tclass=\"bg-gray-50 border border-gray-300 text-content text-sm rounded-lg p-2.5 &lt;nil&gt;\"\n\t><option value=\"0\" \n\t\t\t selected  \n\t\t\t disabled  \n\t\t>\n\t\t\tPick something\n\t\t</option><option value=\"1\" \n\t\t\t \n\t\t\t \n\t\t>\n\t\t\tMale\n\t\t</option><option value=\"2\" \n\t\t\t \n\t\t\t \n\t\t>\n\t\t\tFemale\n\t\t</option></select>\n\n",
 		output)
+}
 
+func Test__PassParamsToEnd(t *testing.T) {
+	buff := bytes.NewBuffer(nil)
+	tpl, err := New("./testData", "tmpl", fm)
+	require.NoError(t, err)
+
+	data := map[string]string{
+		"name": "Paul",
+	}
+	err = tpl.Render(buff, "p-to-end", data)
+	require.NoError(t, err)
+	output := buff.String()
+
+	assert.Equal(t, "<div class=\"isHi\">\n\t<p> Hi, Paul! </p>\n\t<p> Hello, Paul! </p>\n</div>", output)
 }
