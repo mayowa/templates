@@ -73,7 +73,7 @@ func (a *HTMLAttributes) Set(key, value string) string {
 func (a *HTMLAttributes) Render() template.HTMLAttr {
 	out := ""
 	for k, v := range *a {
-		out += fmt.Sprintf("%s=%q ", k, v)
+		out += fmt.Sprintf(" %s=%q ", k, v)
 	}
 
 	return template.HTMLAttr(out)
