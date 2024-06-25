@@ -27,15 +27,33 @@ type Template struct {
 	componentTemplates *template.Template
 }
 
-func New(root, ext string, funcMap template.FuncMap) (*Template, error) {
+type TemplateOptions struct {
+	Ext       string
+	FuncMap   template.FuncMap
+	PathToSVG string
+}
+
+func New(root string, options *TemplateOptions) (*Template, error) {
 	var err error
 	t := new(Template)
 	t.root = root
-	t.ext = ext
-	if ext[0] != '.' {
-		t.ext = "." + ext
+
+	if options == nil {
+		options = &TemplateOptions{
+			Ext:       ".tmpl",
+			FuncMap:   template.FuncMap{},
+			PathToSVG: "./resources/svg",
+		}
 	}
-	t.FuncMap = funcMap
+
+	t.ext = options.Ext
+	if options.Ext[0] != '.' {
+		t.ext = "." + options.Ext
+	}
+
+	options.FuncMap["svg"] = SvgHelper(options.PathToSVG)
+
+	t.FuncMap = options.FuncMap
 	if t.FuncMap == nil {
 		t.FuncMap = make(template.FuncMap)
 	}
