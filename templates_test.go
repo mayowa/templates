@@ -15,9 +15,15 @@ var fm = template.FuncMap{
 	"upper": strings.ToUpper,
 }
 
+var options = &TemplateOptions{
+	Ext:       "tmpl",
+	FuncMap:   fm,
+	PathToSVG: "./testData/svg",
+}
+
 func TestNewTemplates(t *testing.T) {
 
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 	assert.Equal(t, tpl.root, "./testData")
 	assert.Equal(t, ".tmpl", tpl.ext)
@@ -35,7 +41,7 @@ func TestNewTemplates(t *testing.T) {
 
 func Test_templateCache(t *testing.T) {
 
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
@@ -44,7 +50,7 @@ func Test_templateCache(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, tpl.cache, "profile")
 
-	tpl, err = New("./testData", "tmpl", fm)
+	tpl, err = New("./testData", options)
 	require.NoError(t, err)
 
 	tpl.Debug = true
@@ -55,7 +61,7 @@ func Test_templateCache(t *testing.T) {
 
 func Test__noTemplate(t *testing.T) {
 
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
@@ -71,7 +77,7 @@ func Test__noTemplate(t *testing.T) {
 func Test__templateFolder(t *testing.T) {
 	var err error
 
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
@@ -86,7 +92,7 @@ func Test__templateFolder(t *testing.T) {
 func Test__templateInsideAFolder(t *testing.T) {
 	var err error
 
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
@@ -99,7 +105,7 @@ func Test__templateInsideAFolder(t *testing.T) {
 
 func TestStringWithLayout(t *testing.T) {
 	var err error
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
 	out := ""
@@ -122,7 +128,7 @@ func TestStringWithLayout(t *testing.T) {
 
 func TestStringWithoutLayout(t *testing.T) {
 	var err error
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
 	out := ""
@@ -143,7 +149,7 @@ func TestStringWithoutLayout(t *testing.T) {
 func TestTemplate_Lookup(t *testing.T) {
 	var err error
 
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
@@ -156,7 +162,7 @@ func TestTemplate_Lookup(t *testing.T) {
 func TestTemplate_NoShared(t *testing.T) {
 	var err error
 
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
@@ -167,7 +173,7 @@ func TestTemplate_NoShared(t *testing.T) {
 }
 
 func Test_Components(t *testing.T) {
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
@@ -178,7 +184,7 @@ func Test_Components(t *testing.T) {
 
 func Test_ComponentRenderer(t *testing.T) {
 	buff := bytes.NewBuffer(nil)
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
 	if err != nil {
@@ -194,7 +200,7 @@ func Test_ComponentRenderer(t *testing.T) {
 
 func Test_ComplexComponentParams(t *testing.T) {
 	buff := bytes.NewBuffer(nil)
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
 	type SelectOption struct {
@@ -224,7 +230,7 @@ func Test_ComplexComponentParams(t *testing.T) {
 
 func Test__PassParamsToEnd(t *testing.T) {
 	buff := bytes.NewBuffer(nil)
-	tpl, err := New("./testData", "tmpl", fm)
+	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
 	data := map[string]string{
