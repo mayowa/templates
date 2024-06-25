@@ -1,0 +1,3 @@
+<svg width="5" height="green" dummy-width="gotcha" class="w-4 h-4 ms-3">
+	<path stroke="currentColor" d="m1 1 4 4 4-4"/>
+</svg>

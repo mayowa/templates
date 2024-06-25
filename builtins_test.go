@@ -187,6 +187,12 @@ func Test__SvgHelper(t *testing.T) {
 			class:    "dummy-class",
 			expected: `<svg class="w-4 h-4 ms-3 dummy-class" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" class="unchanged" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/></svg>`,
 		},
+
+		{
+			name:     "removes width and height correctly",
+			svg:      "attr",
+			expected: `<svg   dummy-width="gotcha" class="w-4 h-4 ms-3"><path stroke="currentColor" d="m1 1 4 4 4-4"/></svg>`,
+		},
 	}
 
 	svgFunc := SvgHelper("./testData/svg")
