@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"os"
+	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 )
 
@@ -97,4 +100,56 @@ func deDupeString(src string, argv ...string) string {
 	}
 
 	return strings.Join(result, sep)
+}
+
+var reClassAttr = regexp.MustCompile(`(?m) class *= *["']([^"']*)["']`)
+var reAttr = regexp.MustCompile(`([\w-]*) *= *["'][\w -]+["']`)
+
+// SvgHelper expects that the svg markup in the specified file has a class attribute, even if it's empty
+func SvgHelper(folder string) func(name string, class ...string) template.HTML {
+	return func(name string, class ...string) template.HTML {
+
+		cls := ""
+		if len(class) > 0 {
+			cls = class[0]
+		}
+		file := filepath.Join(folder, name+".svg")
+		contents, err := os.ReadFile(file)
+		if err != nil {
+			return ""
+		}
+
+		// append supplied class to class on svg
+		if cls != "" {
+			var classStr string
+			matches := reClassAttr.FindStringSubmatch(string(contents))
+
+			if len(matches) >= 2 {
+				classStr = fmt.Sprintf(" class=%q", matches[1]+" "+cls)
+				// contents = reClassAttr.ReplaceAll(contents, []byte(classStr))
+				contents = bytes.Replace(contents, []byte(matches[0]), []byte(classStr), 1)
+			}
+		}
+
+		// remove width and height attributes
+		attrs := findAttributes(string(contents))
+		for _, a := range attrs {
+			if a[0] == "width" || a[0] == "height" {
+				contents = bytes.Replace(contents, []byte(a[1]), []byte(""), 1)
+			}
+		}
+
+		return template.HTML(contents)
+	}
+}
+
+func findAttributes(src string) [][2]string {
+	var pairs [][2]string
+	ret := reAttr.FindAllStringSubmatchIndex(src, -1)
+	for _, v := range ret {
+		// fmt.Println(i, src[v[0]:v[1]], src[v[2]:v[3]])
+		pairs = append(pairs, [2]string{src[v[2]:v[3]], src[v[0]:v[1]]})
+	}
+
+	return pairs
 }

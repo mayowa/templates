@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -155,5 +156,50 @@ func Test__attrRender(t *testing.T) {
 		if !strings.Contains(renderedAttrs, attrPair) {
 			t.Errorf("Key-Value pair %s not found in rendered string %s", attrPair, renderedAttrs)
 		}
+	}
+}
+
+func Test__SvgHelper(t *testing.T) {
+	formattingRegex := regexp.MustCompile(`[\n\t]+`)
+
+	tests := []struct {
+		name     string
+		svg      string
+		class    string
+		expected string
+	}{
+		{
+			name:     "renders accurately",
+			svg:      "down-chevron",
+			expected: `<svg class="w-4 h-4 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/></svg>`,
+		},
+
+		{
+			name:     "appends classes correctly",
+			svg:      "down-chevron",
+			class:    "dummy-class",
+			expected: `<svg class="w-4 h-4 ms-3 dummy-class" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/></svg>`,
+		},
+
+		{
+			name:     "only appends to first class",
+			svg:      "chevron-extra-class",
+			class:    "dummy-class",
+			expected: `<svg class="w-4 h-4 ms-3 dummy-class" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" class="unchanged" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/></svg>`,
+		},
+	}
+
+	svgFunc := SvgHelper("./testData/svg")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svgOut := string(svgFunc(tt.svg, tt.class))
+			svgOut = formattingRegex.ReplaceAllString(svgOut, "")
+
+			expected := formattingRegex.ReplaceAllString(tt.expected, "")
+
+			if svgOut != expected {
+				t.Errorf("Expected \n %s\n, got \n %s", expected, svgOut)
+			}
+		})
 	}
 }
