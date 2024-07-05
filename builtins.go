@@ -82,6 +82,8 @@ func (a *HTMLAttributes) Render() template.HTMLAttr {
 	return template.HTMLAttr(out)
 }
 
+// deDupe removes duplicate substrings from the source string
+// separator is space by default but can be specified otherwise
 func deDupeString(src string, argv ...string) string {
 	sep := " "
 	if len(argv) > 0 && argv[0] != "" {
@@ -152,4 +154,81 @@ func findAttributes(src string) [][2]string {
 	}
 
 	return pairs
+}
+
+// Merge Tailwind classes builtin
+/**
+Input: two strings s1 and s2. each string consists of substrings separated by spaces. each substring itself consists of substrings separated by hyphens
+Output: single string representing a union of the input strings. this union is formed by adding the substrings according to the following rules:
+- add each substring in s1 to the output. unless it conflicts with a substring in s2. each s1 substring will conflict with at most one substring in s2
+- add each substring in s2 to the output, unless it conflicts with a substring in s1.
+- when there's a conflict, discard the substring from s2
+
+a conflict is defined as the situation where two substrings are either identical or identical except for their last component substring.
+for example, px-5 and px-4 conflict, because they're identical except for their last component.
+p-5 and px-5 do not conflict, b-t-1 and b-s-2 do not conflict, b-t-1 and b-1 do not conflict.
+strings without a hyphen will always conflict.
+
+**/
+
+// Helper function to extract the base class without the last component
+func getBaseClass(class string, sep string) string {
+	parts := strings.Split(class, sep)
+	if len(parts) == 1 {
+		return class
+	}
+	return strings.Join(parts[:len(parts)-1], sep)
+}
+
+func MergeTwClasses(priority, def, sep string) string {
+	if priority == "" {
+		return def
+	}
+
+	if def == "" {
+		return priority
+	}
+
+	if sep == "" {
+		sep = " "
+	}
+
+	// Split the input strings into classes
+	priorityClasses := strings.Split(priority, sep)
+	defaultClasses := strings.Split(def, sep)
+
+	// Maps to track classes and their base forms
+	classMap := make(map[string]bool)
+	baseMap := make(map[string]string)
+
+	// Process priority classes
+	for _, pClass := range priorityClasses {
+		classMap[pClass] = true
+		baseClass := getBaseClass(pClass, "-")
+		baseMap[baseClass] = pClass
+	}
+
+	// Result list containing merged classes
+	res := make([]string, 0, len(priorityClasses))
+	res = append(res, priorityClasses...)
+
+	// Process default classes and check for conflicts
+	for _, dClass := range defaultClasses {
+		baseClass := getBaseClass(dClass, "-")
+		if _, exists := baseMap[baseClass]; exists {
+			// Conflict: Skip this default class
+			continue
+		}
+		if _, exists := classMap[dClass]; exists {
+			// Exact match conflict: Skip this default class
+			continue
+		}
+
+		// No conflict: Add to result and update maps
+		res = append(res, dClass)
+		classMap[dClass] = true
+		baseMap[baseClass] = dClass
+	}
+
+	return strings.Join(res, sep)
 }

@@ -209,3 +209,70 @@ func Test__SvgHelper(t *testing.T) {
 		})
 	}
 }
+
+func Test__MergeTwClasses(t *testing.T) {
+	tests := []struct {
+		name     string
+		priority string
+		def      string
+		expected string
+	}{
+		{
+			name:     "s1 overrides conflicts",
+			priority: "px-5",
+			def:      "px-4",
+			expected: "px-5",
+		},
+		{
+			name:     "s1 and s2 merge if no conflicts",
+			priority: "p-5",
+			def:      "px-4",
+			expected: "p-5 px-4",
+		},
+		{
+			name:     "",
+			priority: "b-t-1",
+			def:      "b-s-2",
+			expected: "b-t-1 b-s-2",
+		},
+		{
+			name:     "",
+			priority: "b-t-1",
+			def:      "b-1",
+			expected: "b-t-1 b-1",
+		},
+		{
+			name:     "",
+			priority: "px-5 mb-2",
+			def:      "px-4 mt-2",
+			expected: "px-5 mb-2 mt-2",
+		},
+		{
+			name:     "",
+			priority: "px-5 mb-2",
+			def:      "px-4 mb-5 mt-3",
+			expected: "px-5 mb-2 mt-3",
+		},
+		{
+			name:     "",
+			priority: "",
+			def:      "default str",
+			expected: "default str",
+		},
+		{
+			name:     "",
+			priority: "pri str",
+			def:      "",
+			expected: "pri str",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := MergeTwClasses(tt.priority, tt.def, " ")
+			if res != tt.expected {
+				t.Errorf("Expected \n %s\n, got \n %s", tt.expected, res)
+			}
+		})
+	}
+}

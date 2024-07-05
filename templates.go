@@ -72,6 +72,7 @@ func New(root string, options *TemplateOptions) (*Template, error) {
 	t.FuncMap["ifZero"] = ifZero
 	t.FuncMap["attributeSet"] = attributes
 	t.FuncMap["deDupeStr"] = deDupeString
+	t.FuncMap["mergeTwClasses"] = MergeTwClasses
 
 	// components templates
 	componentsFolder := "components"
