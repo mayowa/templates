@@ -134,7 +134,8 @@ func SvgHelper(folder string) func(name string, class ...string) template.HTML {
 		}
 
 		// remove width and height attributes
-		attrs := findAttributes(string(contents))
+		// limit search to the head of the svg
+		attrs := findAttributes(string(bytes.Split(contents, []byte(">"))[0]))
 		for _, a := range attrs {
 			if a[0] == "width" || a[0] == "height" {
 				contents = bytes.Replace(contents, []byte(a[1]), []byte(""), 1)
