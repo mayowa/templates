@@ -27,12 +27,12 @@ func TestScanner_ParseTagArgs(t *testing.T) {
 		{
 			name:    "with unterminated string",
 			input:   `name="ayo `,
-			wantErr: errors.New("unterminated string on line:0"),
+			wantErr: errors.New("extractArgVal() found unterminated string on line:0"),
 		},
 		{
 			name:    "with double unterminated string",
 			input:   `name=""ayo"`,
-			wantErr: errors.New("unterminated string on line:0"),
+			wantErr: errors.New("extractArgVal() found unterminated string on line:0"),
 		},
 		{
 			name:    "with missing quotes",
