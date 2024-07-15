@@ -67,6 +67,7 @@ func New(root string, options *TemplateOptions) (*Template, error) {
 
 	t.FuncMap["html"] = func(v string) template.HTML { return template.HTML(v) }
 	t.FuncMap["map"] = aMap
+	t.FuncMap["slice"] = makeSlice
 	t.FuncMap["component"] = t.component
 	t.FuncMap["replaceStr"] = replaceStr
 	t.FuncMap["ifZero"] = ifZero

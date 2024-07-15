@@ -35,6 +35,14 @@ func aMap(args ...any) map[any]interface{} {
 	return retv
 }
 
+func makeSlice(args ...any) []any {
+	retv := make([]any, len(args))
+
+	copy(retv, args)
+
+	return retv
+}
+
 // returns a default value (second param)
 // if first param is nil or a zero value
 // else returns first param
