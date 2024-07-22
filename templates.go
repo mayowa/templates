@@ -46,12 +46,20 @@ func New(root string, options *TemplateOptions) (*Template, error) {
 		}
 	}
 
+	// default to .tmpl when none is provided
+	if options.Ext == "" {
+		options.Ext = ".tmpl"
+	}
+
 	t.ext = options.Ext
 	if options.Ext[0] != '.' {
 		t.ext = "." + options.Ext
 	}
 
-	options.FuncMap["svg"] = SvgHelper(options.PathToSVG)
+	// register the svg helper when path to svg is provided
+	if options.PathToSVG != "" {
+		options.FuncMap["svg"] = SvgHelper(options.PathToSVG)
+	}
 
 	t.FuncMap = options.FuncMap
 	if t.FuncMap == nil {
