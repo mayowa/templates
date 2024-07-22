@@ -45,6 +45,19 @@ func Test_findStartTag(t *testing.T) {
 			},
 			want: &Tag{Name: "foo", IsEnd: false, loc: []int{0, 1}},
 		},
+		{
+			name: "unbalanced nesting",
+			cTag: &Tag{Name: "foo", IsEnd: true},
+			tags: []*Tag{
+				{Name: "foo", loc: []int{0, 1}},
+				{Name: "bar"},
+				{Name: "foo"},
+				{Name: "foo", IsEnd: true},
+				{Name: "foo", IsEnd: true},
+				{Name: "bar", IsEnd: true},
+			},
+			want: nil,
+		},
 	}
 
 	for _, tt := range tests {
