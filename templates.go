@@ -291,6 +291,7 @@ func (t *Template) sortBlockFiles(blockName string, files []string) {
 	for i, fle := range files {
 		fle, _ = filepath.Abs(fle)
 		fle = strings.TrimSuffix(fle, t.ext)
+		fle = filepath.Base(fle)
 		if fle == blockName {
 			idx = i
 			break
