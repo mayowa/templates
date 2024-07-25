@@ -229,6 +229,19 @@ func (t *Template) parse(files ...string) (*template.Template, error) {
 		if len(files) > 1 {
 			fileList = append(fileList, files[1:]...)
 		}
+
+		fBaseTpl := baseTpl + "/" + filepath.Base(strings.TrimSuffix(fileList[0], t.ext))
+		layout, err := t.extractLayout(fBaseTpl)
+		if err != nil && !errors.Is(err, ErrLayoutNotFound) {
+			return nil, err
+		}
+
+		if layout != "" {
+			temp := []string{layout}
+			temp = append(temp, fileList...)
+			fileList = temp
+		}
+
 	} else {
 		layout, err := t.extractLayout(baseTpl)
 		if err != nil && !errors.Is(err, ErrLayoutNotFound) {

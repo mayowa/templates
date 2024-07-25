@@ -89,6 +89,38 @@ func Test__templateFolder(t *testing.T) {
 		buff.String())
 }
 
+func Test__nestedExtends(t *testing.T) {
+	var err error
+
+	tpl, err := New("./testData", options)
+	require.NoError(t, err)
+
+	buff := bytes.NewBuffer(nil)
+
+	err = tpl.Render(buff, "child", nil)
+
+	require.NoError(t, err)
+	assert.Equal(t,
+		"i'm a grandpai'm the dadi'm the child",
+		buff.String())
+}
+
+func Test__extendsInBlockBase(t *testing.T) {
+	var err error
+
+	tpl, err := New("./testData", options)
+	require.NoError(t, err)
+
+	buff := bytes.NewBuffer(nil)
+
+	err = tpl.Render(buff, "nested", nil)
+
+	require.NoError(t, err)
+	assert.Equal(t,
+		"i'm the base of the nested content\n\nnested content",
+		buff.String())
+}
+
 func Test__templateInsideAFolder(t *testing.T) {
 	var err error
 
