@@ -227,7 +227,7 @@ func Test_ComponentRenderer(t *testing.T) {
 	require.NoError(t, err)
 	output := buff.String()
 	t.Log(output)
-	assert.Equal(t, output, "\n<div class=\"isBox\">\n\t<h1 class=\"bar?\">this cards title</h1>\n\tliving large within a Box!!\n\t<div class=\"isCard\">\n\t<h1>Ode to a card</h1>A card within a box?\n</div>\n</div>\n")
+	assert.Equal(t, "\n<div class=\"isBox\">\n\t<h1 class=\"bar?\">this cards title</h1>\n\tliving large within a Box!!\n\t<div class=\"isCard\">\n\t<h1>Ode to a card</h1>A card within a box?\n</div>\n</div>\n", output)
 }
 
 func Test_ComplexComponentParams(t *testing.T) {

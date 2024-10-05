@@ -4,18 +4,24 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"html/template"
+	"io/fs"
+	"path/filepath"
 	"strings"
 )
 
 func (t *Template) processComponentsInTemplate(contents *[]byte) error {
-	// return nil
 
 	if t.componentTemplates == nil {
 		return nil
 	}
 
+	return processComponents(contents)
+}
+
+func processComponents(contents *[]byte) error {
 	buf := bytes.NewBuffer(nil)
-	tags := []*Tag{}
+	var tags []*Tag
 	for {
 		cTag, err := findNextTag(*contents)
 		if err != nil {
@@ -35,9 +41,7 @@ func (t *Template) processComponentsInTemplate(contents *[]byte) error {
 		}
 		tags = append(tags, cTag)
 
-		// check if a template named t.name exists in the components folder
 		cName := strings.ToLower(cTag.Name)
-
 		args := fmt.Sprintf(`(map "_isSelfClosing" %v "_isEnd" %v %s)`, cTag.IsSelfClosing, cTag.IsEnd, cTag.Args.ArgPairs())
 		buf.WriteString(`{{ component "` + cName + `" ` + args + ` }}`)
 
@@ -80,4 +84,27 @@ func findStartTag(cTag *Tag, tags []*Tag) *Tag {
 	}
 
 	return nil
+}
+
+func componentTemplates(folder, ext string, funcMap template.FuncMap, readFile readFileFunc) (*template.Template, error) {
+	t := template.New("").Funcs(funcMap)
+
+	var filenames []string
+	err := filepath.WalkDir(folder, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			return nil
+		}
+
+		if filepath.Ext(path) != ext {
+			return nil
+		}
+
+		filenames = append(filenames, path)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return parseFiles(t, readFile, funcMap, filenames)
 }

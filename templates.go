@@ -24,6 +24,8 @@ type Template struct {
 	cache              map[string]*template.Template
 	mtx                sync.RWMutex
 	Debug              bool
+	fSys               fs.FS
+	componentFolder    string
 	componentTemplates *template.Template
 }
 
@@ -31,6 +33,7 @@ type TemplateOptions struct {
 	Ext       string
 	FuncMap   template.FuncMap
 	PathToSVG string
+	FS        fs.FS
 }
 
 func New(root string, options *TemplateOptions) (*Template, error) {
@@ -45,6 +48,8 @@ func New(root string, options *TemplateOptions) (*Template, error) {
 			PathToSVG: "./resources/svg",
 		}
 	}
+
+	t.fSys = options.FS
 
 	// default to .tmpl when none is provided
 	if options.Ext == "" {
@@ -84,9 +89,10 @@ func New(root string, options *TemplateOptions) (*Template, error) {
 	t.FuncMap["mergeTwClasses"] = MergeTwClasses
 
 	// components templates
-	componentsFolder := "components"
-	if t.isFolder(componentsFolder) {
-		t.componentTemplates, err = template.New("").Funcs(t.FuncMap).ParseGlob(filepath.Join(t.root, componentsFolder) + "/*" + t.ext)
+	t.componentFolder = "components"
+	if t.isFolder(t.componentFolder) {
+		componentFolder := filepath.Join(t.root, t.componentFolder)
+		t.componentTemplates, err = componentTemplates(componentFolder, t.ext, t.FuncMap, readFiler(t, t.fSys))
 		if err != nil && !strings.Contains(err.Error(), "pattern matches no files") {
 			return nil, err
 		}
@@ -157,7 +163,7 @@ func (t *Template) String(layout, src string, data any) (string, error) {
 
 	if layout != "" {
 		layoutFleName := filepath.Join(t.root, layout+t.ext)
-		tpl, err = t.parseFiles(nil, t.readFileOS, layoutFleName)
+		tpl, err = t.parseFiles(nil, readFiler(t, t.fSys), layoutFleName)
 		if err != nil {
 			return "", err
 		}
@@ -179,7 +185,7 @@ func (t *Template) String(layout, src string, data any) (string, error) {
 	}
 
 	if len(filenames) > 0 {
-		if tpl, err = t.parseFiles(tpl, t.readFileOS, filenames...); err != nil {
+		if tpl, err = t.parseFiles(tpl, readFiler(t, t.fSys), filenames...); err != nil {
 			return "", err
 		}
 	}
@@ -217,6 +223,7 @@ func (t *Template) parse(files ...string) (*template.Template, error) {
 	)
 
 	baseTpl := files[0]
+	rfFunc := readFiler(t, t.fSys)
 
 	if t.isFolder(baseTpl) {
 		blockFiles, err := t.findFiles(filepath.Join(t.root, baseTpl), t.ext)
@@ -260,7 +267,7 @@ func (t *Template) parse(files ...string) (*template.Template, error) {
 	}
 
 	// parse templates
-	tpl, err := t.parseFiles(nil, t.readFileOS, fileList...)
+	tpl, err := t.parseFiles(nil, rfFunc, fileList...)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +275,7 @@ func (t *Template) parse(files ...string) (*template.Template, error) {
 	// parse shared templates
 	filenames, _ := t.findFiles(t.sharedFolder, t.ext)
 	if len(filenames) > 0 {
-		return t.parseFiles(tpl, t.readFileOS, filenames...)
+		return t.parseFiles(tpl, rfFunc, filenames...)
 	}
 
 	return tpl, nil
@@ -351,10 +358,12 @@ func (t *Template) findFiles(root, ext string) (filenames []string, err error) {
 	return filenames, nil
 }
 
-type readFileFunc func(string) (string, []byte, error)
+func (t *Template) parseFiles(tpl *template.Template, readFile readFileFunc, filenames ...string) (*template.Template, error) {
+	return parseFiles(tpl, readFile, t.FuncMap, filenames)
+}
 
 // parseFiles (adapted from stdlib)
-func (t *Template) parseFiles(tpl *template.Template, readFile readFileFunc, filenames ...string) (*template.Template, error) {
+func parseFiles(tpl *template.Template, readFile readFileFunc, funcMap template.FuncMap, filenames []string) (*template.Template, error) {
 	if len(filenames) == 0 {
 		// Not really a problem, but be consistent.
 		return nil, fmt.Errorf("html/template: no files named in call to ParseFiles")
@@ -365,7 +374,7 @@ func (t *Template) parseFiles(tpl *template.Template, readFile readFileFunc, fil
 			return nil, err
 		}
 
-		if err := t.processComponentsInTemplate(&b); err != nil {
+		if err := processComponents(&b); err != nil {
 			return nil, err
 		}
 
@@ -379,8 +388,9 @@ func (t *Template) parseFiles(tpl *template.Template, readFile readFileFunc, fil
 		var tmpl *template.Template
 		if tpl == nil {
 			tpl = template.New(name)
-			tpl.Funcs(t.FuncMap)
+			tpl.Funcs(funcMap)
 		}
+
 		if name == tpl.Name() {
 			tmpl = tpl
 		} else {
@@ -400,26 +410,35 @@ func (t *Template) stripFileName(name string) string {
 	} else {
 		name = strings.TrimPrefix(name, filepath.Clean(t.root))
 	}
-	name = strings.TrimSuffix(name, t.ext)
 
+	cf := filepath.Join("/", t.componentFolder) + "/"
+	if strings.HasPrefix(name, cf) {
+		name = strings.TrimPrefix(name, cf)
+	} else {
+		name = strings.TrimSuffix(name, t.ext)
+	}
 	if name[0] == '/' {
 		name = name[1:]
 	}
 	return name
 }
 
-// readFileOS  (adapted from stdlib)
-func (t *Template) readFileOS(file string) (name string, b []byte, err error) {
-	name = t.stripFileName(file)
-	b, err = os.ReadFile(file)
-	return
-}
+type readFileFunc func(file string) (name string, b []byte, err error)
 
-// readFileFS  (borrowed from stdlib)
-func (t *Template) readFileFS(fsys fs.FS) func(string) (string, []byte, error) {
+// readFile  (adapted from stdlib)
+func readFiler(t *Template, fSys fs.FS) readFileFunc {
 	return func(file string) (name string, b []byte, err error) {
-		name = t.stripFileName(file)
-		b, err = fs.ReadFile(fsys, file)
+		if t != nil {
+			name = t.stripFileName(file)
+		} else {
+			name = file
+		}
+
+		if fSys != nil {
+			b, err = fs.ReadFile(fSys, file)
+		} else {
+			b, err = os.ReadFile(file)
+		}
 		return
 	}
 }
