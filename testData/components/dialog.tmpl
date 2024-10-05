@@ -1,0 +1,9 @@
+{{- if eq ._isEnd false -}}
+<div class="isDialog">
+	<Box title="{{.title}}">
+{{- end -}}
+{{- if or ._isEnd ._isSelfClosing -}}
+	</Box>
+	<button>OK</button>
+</div>
+{{- end -}}
