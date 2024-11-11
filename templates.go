@@ -87,6 +87,8 @@ func New(root string, options *TemplateOptions) (*Template, error) {
 	t.FuncMap["attributeSet"] = attributes
 	t.FuncMap["deDupeStr"] = deDupeString
 	t.FuncMap["mergeTwClasses"] = MergeTwClasses
+	t.FuncMap["toJson"] = ToJson
+	t.FuncMap["formatWithCommas"] = FormatWithCommas
 
 	// components templates
 	t.componentFolder = "components"

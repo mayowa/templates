@@ -2,12 +2,14 @@ package templates
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -240,4 +242,55 @@ func MergeTwClasses(priority, def, sep string) string {
 	}
 
 	return strings.Join(res, sep)
+}
+
+func FormatWithCommas(n any) string {
+	var str string
+
+	// Check if n is an int or float64 and format accordingly
+	switch v := n.(type) {
+	case int:
+		str = strconv.Itoa(v)
+	case float64:
+		// Format the float with up to 2 decimal places
+		str = fmt.Sprintf("%.2f", v)
+	default:
+		return "Invalid type"
+	}
+
+	// Split integer and fractional parts for floats
+	parts := strings.Split(str, ".")
+	integerPart := parts[0]
+	length := len(integerPart)
+
+	// Add commas to the integer part
+	if length > 3 {
+		var result strings.Builder
+		firstGroupSize := length % 3
+		if firstGroupSize == 0 {
+			firstGroupSize = 3
+		}
+		result.WriteString(integerPart[:firstGroupSize])
+		for i := firstGroupSize; i < length; i += 3 {
+			result.WriteString(",")
+			result.WriteString(integerPart[i : i+3])
+		}
+		integerPart = result.String()
+	}
+
+	// If it's a float, reattach the fractional part
+	if len(parts) > 1 {
+		return integerPart + "." + parts[1]
+	}
+
+	return integerPart
+}
+
+func ToJson(v any) string {
+	val, err := json.Marshal(v)
+	if err != nil {
+		return err.Error()
+	}
+
+	return string(val)
 }
