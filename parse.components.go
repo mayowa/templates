@@ -9,7 +9,7 @@ import (
 	"github.com/mayowa/templates/scanner"
 )
 
-var reTag = regexp.MustCompile(`</* *([A-Z][a-z-]+) *([\w\W]*?) *>`)
+var reTag = regexp.MustCompile(`</* *([A-Z][a-z-]+[a-zA-Z]*) *([\w\W]*?) *>`)
 
 type ArgMap map[string]string
 

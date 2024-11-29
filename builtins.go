@@ -13,6 +13,32 @@ import (
 	"strings"
 )
 
+func BuiltinInit(t *Template, options *TemplateOptions) error {
+	t.FuncMap = options.FuncMap
+	if t.FuncMap == nil {
+		t.FuncMap = make(template.FuncMap)
+	}
+
+	// register the svg helper when path to svg is provided
+	if options.PathToSVG != "" {
+		options.FuncMap["svg"] = SvgHelper(options.PathToSVG)
+	}
+
+	t.FuncMap["html"] = func(v string) template.HTML { return template.HTML(v) }
+	t.FuncMap["map"] = aMap
+	t.FuncMap["slice"] = makeSlice
+	t.FuncMap["component"] = t.component
+	t.FuncMap["replaceStr"] = replaceStr
+	t.FuncMap["ifZero"] = ifZero
+	t.FuncMap["attributeSet"] = attributes
+	t.FuncMap["deDupeStr"] = deDupeString
+	t.FuncMap["mergeTwClasses"] = MergeTwClasses
+	t.FuncMap["toJson"] = ToJson
+	t.FuncMap["formatWithCommas"] = FormatWithCommas
+
+	return nil
+}
+
 func (t *Template) component(name string, args map[any]any) template.HTML {
 	name += t.ext
 	tpl := t.componentTemplates.Lookup(name)
