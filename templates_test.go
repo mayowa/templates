@@ -290,3 +290,19 @@ func Test__NestedComponents(t *testing.T) {
 	t.Log(output)
 	assert.Equal(t, "\n<div class=\"isDialog\">\n\t<div class=\"isBox\">\n\t<h1 class=\"\">this box title</h1>\n\ta box living large within a Dialog!\n\t<div class=\"isCard\">\n\t<h1>Ode to a box</h1>A card within a box?\n</div>\n</div>\n\t<button>OK</button>\n</div>\n", output)
 }
+
+func Test__NestedComponents_camelCase(t *testing.T) {
+	buff := bytes.NewBuffer(nil)
+	tpl, err := New("./testData", options)
+	require.NoError(t, err)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = tpl.Render(buff, "comp-cardbox", nil)
+	require.NoError(t, err)
+	output := buff.String()
+	t.Log(output)
+	assert.Equal(t, "\n<div class=\"isDialog\">\n\t<div class=\"isBox\">\n\t<h1 class=\"\">this box title</h1>\n\ta box living large within a Dialog!\n\t<div class=\"isCard\">\n\t<h1>Ode to a box</h1>A card within a box?\n</div>\n</div>\n\t<button>OK</button>\n</div>\n", output)
+}

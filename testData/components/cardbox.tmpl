@@ -1,0 +1,7 @@
+{{- if eq ._isEnd false -}}
+<div class="isCardBox">
+	<h1 class="{{.foo}}">{{.title}}</h1>
+{{- end -}}
+{{- if or ._isEnd ._isSelfClosing -}}
+</div>
+{{- end -}}

@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -46,12 +47,23 @@ func Test_findNextTag(t *testing.T) {
 				IsEnd: true,
 			},
 		},
+		{
+			Name: "InputField",
+			Content: []byte(`
+			<InputField label="User" placeholder="e.d chidinma" help="a help message" />
+			`),
+			Tag: &Tag{
+				Name:          "InputField",
+				Args:          map[string]string{"label": "User", "placeholder": "e.d chidinma", "help": "a help message"},
+				IsSelfClosing: true,
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			tag, err := findNextTag(tt.Content)
-			if err != tt.Error {
+			if !errors.Is(err, tt.Error) {
 				t.Errorf("findNextTag() error = %v, wantErr %v", err, tt.Error)
 			}
 
