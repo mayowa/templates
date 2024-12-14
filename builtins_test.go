@@ -282,3 +282,40 @@ func Test__MergeTwClasses(t *testing.T) {
 		})
 	}
 }
+
+func Test__stringSet(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+		sep  string
+		add  string
+		want string
+	}{
+		{
+			name: "empty",
+		},
+		{
+			name: "test 1",
+			src:  "single word",
+			sep:  " ",
+			add:  "and single foo Word",
+			want: "single word and foo",
+		},
+		{
+			name: "test 2",
+			src:  "",
+			sep:  " ",
+			add:  "and single foo Word",
+			want: "and single foo Word",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := stringSet(tt.src, tt.sep, tt.add)
+			if res != tt.want {
+				t.Errorf("Expected: %q, got: %q", tt.want, res)
+			}
+		})
+	}
+}

@@ -35,6 +35,8 @@ func BuiltinInit(t *Template, options *TemplateOptions) error {
 	t.FuncMap["mergeTwClasses"] = MergeTwClasses
 	t.FuncMap["toJson"] = ToJson
 	t.FuncMap["formatWithCommas"] = FormatWithCommas
+	t.FuncMap["strInList"] = inList
+	t.FuncMap["stringSet"] = stringSet
 
 	return nil
 }
@@ -268,6 +270,40 @@ func MergeTwClasses(priority, def, sep string) string {
 	}
 
 	return strings.Join(res, sep)
+}
+
+// stringSet given a @src string containing substrings separated with (@sep)
+// return a union of substrings in @src and @add
+func stringSet(src, sep, add string) string {
+	var srcList []string
+	src = strings.TrimSpace(src)
+	add = strings.TrimSpace(add)
+
+	if src != "" {
+		srcList = strings.Split(src, sep)
+	}
+
+	parts := strings.Split(add, sep)
+
+	for _, str := range parts {
+		if inList(str, srcList) {
+			continue
+		}
+
+		srcList = append(srcList, str)
+	}
+
+	return strings.Join(srcList, sep)
+}
+
+func inList(cmp string, list []string) bool {
+	cmp = strings.ToLower(cmp)
+	for _, str := range list {
+		if cmp == strings.ToLower(str) {
+			return true
+		}
+	}
+	return false
 }
 
 func FormatWithCommas(n any) string {
