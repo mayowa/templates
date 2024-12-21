@@ -112,21 +112,6 @@ func (t *Template) parse(files ...string) (*template.Template, error) {
 		}
 
 	} else {
-		// layout, err := t.extractLayout(baseTpl)
-		// if err != nil && !errors.Is(err, ErrLayoutNotFound) {
-		// 	return nil, err
-		// }
-		//
-		// // if we have a layout at this point, add it to the fileList
-		// if layout != "" {
-		// 	fileList = append([]string{layout}, fileList...)
-		// }
-		//
-		// // add file paths to file list instead of just file names
-		// for _, fileName := range files {
-		// 	fileList = append(fileList, filepath.Join(t.root, fileName+t.ext))
-		// }
-
 		i := 0
 		for i < len(files) {
 			fileName := files[i]
