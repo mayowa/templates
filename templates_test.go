@@ -101,7 +101,7 @@ func Test__nestedExtends(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t,
-		"i'm a grandpai'm the dadi'm the child",
+		"i'm the grandpai'm the dadi'm the child",
 		buff.String())
 }
 
@@ -291,18 +291,28 @@ func Test__NestedComponents(t *testing.T) {
 	assert.Equal(t, "\n<div class=\"isDialog\">\n\t<div class=\"isBox\">\n\t<h1 class=\"\">this box title</h1>\n\ta box living large within a Dialog!\n\t<div class=\"isCard\">\n\t<h1>Ode to a box</h1>A card within a box?\n</div>\n</div>\n\t<button>OK</button>\n</div>\n", output)
 }
 
-func Test__NestedComponents_camelCase(t *testing.T) {
+func Test__InFolder(t *testing.T) {
 	buff := bytes.NewBuffer(nil)
 	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 
-	if err != nil {
-		t.Fatal(err.Error())
+	tests := []struct {
+		name     string
+		tplName  string
+		expected string
+	}{
+		{name: "test 1", tplName: "inFolder/index", expected: "A template\nI am a form"},
+		{name: "test 2", tplName: "inFolder/child", expected: "base layout\nA child\nI am a form"},
 	}
 
-	err = tpl.Render(buff, "comp-cardbox", nil)
-	require.NoError(t, err)
-	output := buff.String()
-	t.Log(output)
-	assert.Equal(t, "\n<div class=\"isDialog\">\n\t<div class=\"isBox\">\n\t<h1 class=\"\">this box title</h1>\n\ta box living large within a Dialog!\n\t<div class=\"isCard\">\n\t<h1>Ode to a box</h1>A card within a box?\n</div>\n</div>\n\t<button>OK</button>\n</div>\n", output)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buff.Reset()
+			err = tpl.Render(buff, tt.tplName, nil)
+			require.NoError(t, err)
+			output := buff.String()
+			assert.Equal(t, tt.expected, output)
+
+		})
+	}
 }

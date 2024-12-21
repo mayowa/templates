@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -87,20 +88,19 @@ func (t *Template) parse(files ...string) (*template.Template, error) {
 	baseTpl := files[0]
 	rfFunc := readFiler(t, t.fSys)
 
-	if t.isFolder(baseTpl) {
-		blockFiles, err := t.findFiles(filepath.Join(t.root, baseTpl), t.ext)
+	if baseFolder, ok := t.isInFolder(baseTpl); ok {
+		blockFiles, err := t.findFiles(baseFolder, t.ext)
 		if err != nil {
 			return nil, err
 		}
-		t.sortBlockFiles(baseTpl, blockFiles)
+		t.sortFolderFiles(baseTpl, blockFiles)
 
-		fileList = append(fileList, blockFiles...)
+		fileList = append([]string{}, blockFiles...)
 		if len(files) > 1 {
 			fileList = append(fileList, files[1:]...)
 		}
 
-		fBaseTpl := baseTpl + "/" + filepath.Base(strings.TrimSuffix(fileList[0], t.ext))
-		layout, err := t.extractLayout(fBaseTpl)
+		layout, err := t.extractLayout(baseTpl)
 		if err != nil && !errors.Is(err, ErrLayoutNotFound) {
 			return nil, err
 		}
@@ -112,19 +112,32 @@ func (t *Template) parse(files ...string) (*template.Template, error) {
 		}
 
 	} else {
-		layout, err := t.extractLayout(baseTpl)
-		if err != nil && !errors.Is(err, ErrLayoutNotFound) {
-			return nil, err
-		}
+		// layout, err := t.extractLayout(baseTpl)
+		// if err != nil && !errors.Is(err, ErrLayoutNotFound) {
+		// 	return nil, err
+		// }
+		//
+		// // if we have a layout at this point, add it to the fileList
+		// if layout != "" {
+		// 	fileList = append([]string{layout}, fileList...)
+		// }
+		//
+		// // add file paths to file list instead of just file names
+		// for _, fileName := range files {
+		// 	fileList = append(fileList, filepath.Join(t.root, fileName+t.ext))
+		// }
 
-		// if we have a layout at this point, add it to the fileList
-		if layout != "" {
-			fileList = append([]string{layout}, fileList...)
-		}
+		i := 0
+		for i < len(files) {
+			fileName := files[i]
+			layout, err := t.extractLayout(fileName)
+			if err == nil && !inFrontOf(files, i, t.cleanTemplateName(layout)) {
+				files = slices.Insert(files, i, t.cleanTemplateName(layout))
+				continue
+			}
 
-		// add file paths to file list instead of just file names
-		for _, fileName := range files {
-			fileList = append(fileList, filepath.Join(t.root, fileName+t.ext))
+			fileList = append(fileList, t.absTemplateName(fileName))
+			i++
 		}
 	}
 
@@ -148,6 +161,7 @@ var extendsRe = regexp.MustCompile(`{{/\*\s*extends?\s*"(.*)"\s*\*/}}`)
 var ErrLayoutNotFound = errors.New("layout not found")
 
 func (t *Template) extractLayout(name string) (string, error) {
+	name = t.cleanTemplateName(name)
 	if t.isFolder(name) {
 		return "", ErrLayoutNotFound
 	}
@@ -173,4 +187,29 @@ func (t *Template) extractLayout(name string) (string, error) {
 	}
 
 	return filepath.Join(t.root, match[1]+t.ext), nil
+}
+
+func (t *Template) cleanTemplateName(name string) string {
+	if strings.HasPrefix(name, filepath.Clean(t.root)+string(filepath.Separator)) {
+		name = name[len(filepath.Clean(t.root)+string(filepath.Separator)):]
+	}
+
+	if strings.HasSuffix(name, t.ext) {
+		name = name[:len(name)-len(t.ext)]
+	}
+
+	return name
+}
+
+func (t *Template) absTemplateName(name string) string {
+	name = t.cleanTemplateName(name)
+	return filepath.Join(t.root, name+t.ext)
+}
+
+func inFrontOf(list []string, idx int, s string) bool {
+	if idx == 0 {
+		return false
+	}
+
+	return list[idx-1] == s
 }
