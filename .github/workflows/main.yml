@@ -23,6 +23,8 @@ jobs:
       run: go test ./... -v
     
     - name: Generate tag
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAT }}
       if: success()
       run: |
         # Get current date for tag
