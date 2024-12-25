@@ -91,7 +91,7 @@ func (t *Template) sortBlockFiles(blockName string, files []string) {
 }
 
 func (t *Template) sortFolderFiles(blockName string, files []string) {
-	blockName = filepath.Join(t.root, blockName+t.ext)
+	blockName = t.absTemplateName(blockName)
 	// put the file with the same name as the block first
 	idx := -1
 	for i, fle := range files {

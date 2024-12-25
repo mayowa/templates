@@ -81,14 +81,22 @@ func readFiler(t *Template, fSys fs.FS) readFileFunc {
 
 func (t *Template) parse(files ...string) (*template.Template, error) {
 	var (
-		err      error
-		fileList []string
+		err                error
+		fileList           []string
+		baseFolder         string
+		isFolder, inFolder bool
 	)
 
 	baseTpl := files[0]
 	rfFunc := readFiler(t, t.fSys)
+	if isFolder = t.isFolder(baseTpl); isFolder {
+		baseFolder = filepath.Join(t.root, baseTpl)
+		baseTpl = filepath.Join(baseTpl, baseTpl)
+	} else {
+		baseFolder, inFolder = t.isInFolder(baseTpl)
+	}
 
-	if baseFolder, ok := t.isInFolder(baseTpl); ok {
+	if isFolder || inFolder {
 		blockFiles, err := t.findFiles(baseFolder, t.ext)
 		if err != nil {
 			return nil, err
@@ -100,7 +108,7 @@ func (t *Template) parse(files ...string) (*template.Template, error) {
 			fileList = append(fileList, files[1:]...)
 		}
 
-		layout, err := t.extractLayout(baseTpl)
+		layout, err := t.extractLayout(fileList[0])
 		if err != nil && !errors.Is(err, ErrLayoutNotFound) {
 			return nil, err
 		}
