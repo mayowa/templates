@@ -29,12 +29,15 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use GITHUB_TOKEN      
       run: |
-        # Get current date for tag
-        DATE=$(date +'%Y.%m.%d')
-        # Get current count of tags for today to create unique tag
-        COUNT=$(git tag | grep $DATE | wc -l)
-        # Create new tag
-        NEW_TAG="v$DATE.$COUNT"
+        # Get latest tag
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        
+        # Increment patch version
+        MAJOR=$(echo $LATEST_TAG | cut -d. -f1)
+        MINOR=$(echo $LATEST_TAG | cut -d. -f2)
+        PATCH=$(echo $LATEST_TAG | cut -d. -f3)
+        NEXT_PATCH=$((PATCH + 1))
+        NEW_TAG="${MAJOR}.${MINOR}.${NEXT_PATCH}"
         
         # Configure Git
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
