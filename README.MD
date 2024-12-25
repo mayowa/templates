@@ -1,3 +1,6 @@
+[![Test and Tag](https://github.com/mayowa/templates/actions/workflows/main.yml/badge.svg)](https://github.com/mayowa/templates/actions/workflows/main.yml)
+
+
 # Templates
 a wrapper around html/templates
 
