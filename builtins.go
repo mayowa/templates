@@ -21,7 +21,7 @@ func BuiltinInit(t *Template, options *TemplateOptions) error {
 
 	// register the svg helper when path to svg is provided
 	if options.PathToSVG != "" {
-		options.FuncMap["svg"] = SvgHelper(options.PathToSVG)
+		t.FuncMap["svg"] = SvgHelper(options.PathToSVG)
 	}
 
 	t.FuncMap["html"] = func(v string) template.HTML { return template.HTML(v) }
