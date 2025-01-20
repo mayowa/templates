@@ -140,25 +140,60 @@ func (t *Template) listFiles(files []string) []string {
 // of the slice
 func (t *Template) listFolderFiles(baseTpl, baseFolder string) ([]string, error) {
 	var (
-		fileList   []string
-		blockFiles []string
-		err        error
+		fileList []string
 	)
-
-	// get files in the shared subfolder if it exists
-	sharedSubFolder := filepath.Join(baseFolder, "shared")
-	if t.isFolder(sharedSubFolder) {
-		blockFiles, err = t.findFiles(sharedSubFolder, t.ext)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	absBaseTpl := t.absTemplateName(baseTpl)
 	fileList = t.listFiles([]string{absBaseTpl})
-	fileList = append(fileList, blockFiles...)
+
+	i := -1
+	fleCount := len(fileList)
+	for i < fleCount {
+		i++
+		if i >= fleCount {
+			break
+		}
+
+		fle := fileList[i]
+		refs, err := t.findTemplateRefs(fle)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(refs) > 0 {
+			// remove references to templates not in this folder
+			refs = slices.DeleteFunc(refs, func(s string) bool {
+				return !strings.HasPrefix(s, t.cleanTemplateName(baseFolder))
+			})
+
+			for _, ref := range refs {
+				fileList = append(fileList, t.absTemplateName(ref))
+			}
+		}
+	}
 
 	return fileList, nil
+}
+
+var reTplAction = regexp.MustCompile(`{{\-*\s*template\s*"([^"]+)"\s*[\s\w\W]*?\-*}}`)
+
+func (t *Template) findTemplateRefs(file string) ([]string, error) {
+	var templates []string
+
+	fileName := t.absTemplateName(file)
+	src, err := os.ReadFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	matches := reTplAction.FindAllStringSubmatch(string(src), -1)
+	for _, match := range matches {
+		if len(match) > 1 {
+			templates = append(templates, match[1])
+		}
+	}
+
+	return slices.CompactFunc(templates, strings.EqualFold), nil
 }
 
 var extendsRe = regexp.MustCompile(`{{/\*\s*extends?\s*"(.*)"\s*\*/}}`)
