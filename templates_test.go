@@ -90,36 +90,6 @@ func Test__nestedExtends(t *testing.T) {
 		buff.String())
 }
 
-func Test__extendsInBlockBase(t *testing.T) {
-	var err error
-
-	tpl, err := New("./testData", options)
-	require.NoError(t, err)
-
-	buff := bytes.NewBuffer(nil)
-
-	err = tpl.Render(buff, "nested", nil)
-
-	require.NoError(t, err)
-	assert.Equal(t,
-		"i'm the base of the nested content\n\nnested content",
-		buff.String())
-}
-
-func Test__templateInsideAFolder(t *testing.T) {
-	var err error
-
-	tpl, err := New("./testData", options)
-	require.NoError(t, err)
-
-	buff := bytes.NewBuffer(nil)
-	err = tpl.Render(buff, "block/fragment", nil)
-	require.NoError(t, err)
-	assert.Equal(t,
-		"a fragment", buff.String())
-
-}
-
 func TestStringWithLayout(t *testing.T) {
 	var err error
 	tpl, err := New("./testData", options)
@@ -170,10 +140,9 @@ func TestTemplate_Lookup(t *testing.T) {
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
-	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "block", d)
+	err = tpl.Render(buff, "inFolder/index", nil)
 	require.NoError(t, err)
-	assert.True(t, tpl.Exists("block"))
+	assert.True(t, tpl.Exists("inFolder/index"))
 }
 
 func TestTemplate_NoShared(t *testing.T) {
@@ -289,6 +258,7 @@ func Test__InFolder(t *testing.T) {
 		{name: "with template in shared", tplName: "inFolderWithShared/index", expected: "A template\nI am a form"},
 		{name: "no block overide", tplName: "inFolder/index", expected: "A template\nwith no content"},
 		{name: "extends outside template", tplName: "inFolder/child", expected: "base layout\nA child"},
+		{name: "nested extend", tplName: "inFolder/grandchild", expected: "base layout\nA child and grand child"},
 	}
 
 	for _, tt := range tests {

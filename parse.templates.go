@@ -155,16 +155,8 @@ func (t *Template) listFolderFiles(baseTpl, baseFolder string) ([]string, error)
 	}
 
 	absBaseTpl := t.absTemplateName(baseTpl)
-	fileList = append([]string{absBaseTpl}, blockFiles...)
-
-	layout, err := t.extractLayout(baseTpl)
-	if err != nil && !errors.Is(err, ErrLayoutNotFound) {
-		return nil, err
-	}
-
-	if layout != "" {
-		fileList = append([]string{layout}, fileList...)
-	}
+	fileList = t.listFiles([]string{absBaseTpl})
+	fileList = append(fileList, blockFiles...)
 
 	return fileList, nil
 }

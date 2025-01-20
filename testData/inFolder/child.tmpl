@@ -1,5 +1,5 @@
 {{/* extends "inFolderBase" */}}
 
 {{- define "ifcontent"  -}}
-A child
+A child{{block "grandchild" .}}{{end}}
 {{- end -}}
