@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,9 +32,10 @@ func TestNewTemplates(t *testing.T) {
 	d := struct{ Name string }{Name: "philippta"}
 	err = tpl.Render(buff, "profile", d)
 	require.NoError(t, err)
-	assert.Nil(t, deep.Equal(
+	assert.Equal(t,
 		"cast layout\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
-		buff.String()))
+		buff.String(),
+	)
 
 }
 
@@ -72,21 +72,6 @@ func Test__noTemplate(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "make I tell you something...\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n", buff.String())
 
-}
-
-func Test__templateFolder(t *testing.T) {
-	var err error
-
-	tpl, err := New("./testData", options)
-	require.NoError(t, err)
-
-	buff := bytes.NewBuffer(nil)
-	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "block", d)
-	require.NoError(t, err)
-	assert.Equal(t,
-		"the index\n\t\t<div>overlay</div>\n    a fragment\n    \n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n\n",
-		buff.String())
 }
 
 func Test__nestedExtends(t *testing.T) {
@@ -301,8 +286,9 @@ func Test__InFolder(t *testing.T) {
 		tplName  string
 		expected string
 	}{
-		{name: "test 1", tplName: "inFolder/index", expected: "A template\nI am a form"},
-		{name: "test 2", tplName: "inFolder/child", expected: "base layout\nA child\nI am a form"},
+		{name: "with template in shared", tplName: "inFolderWithShared/index", expected: "A template\nI am a form"},
+		{name: "no block overide", tplName: "inFolder/index", expected: "A template\nwith no content"},
+		{name: "extends outside template", tplName: "inFolder/child", expected: "base layout\nA child"},
 	}
 
 	for _, tt := range tests {

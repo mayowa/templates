@@ -22,7 +22,11 @@ func (t *Template) Exists(name string) bool {
 
 // isFolder checks if a folder exists in the template folder
 func (t *Template) isFolder(name string) bool {
-	templateName := filepath.Join(t.root, name)
+	var templateName string = name
+	if !strings.HasPrefix(filepath.Clean(name), filepath.Clean(t.root)) {
+		templateName = filepath.Join(t.root, name)
+	}
+
 	fi, err := os.Stat(templateName)
 	if err != nil {
 		return false
@@ -101,10 +105,12 @@ func (t *Template) sortFolderFiles(blockName string, files []string) {
 		}
 	}
 
-	if idx == -1 {
+	lastPos := len(files) - 1
+	if idx == -1 || idx == lastPos {
 		return
 	}
-	files[0], files[idx] = files[idx], files[0]
+
+	files[lastPos], files[idx] = files[idx], files[lastPos]
 }
 
 // findFiles

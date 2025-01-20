@@ -79,63 +79,31 @@ func readFiler(t *Template, fSys fs.FS) readFileFunc {
 	}
 }
 
-func (t *Template) parse(files ...string) (*template.Template, error) {
+func (t *Template) parse(templates ...string) (*template.Template, error) {
 	var (
-		err                error
-		fileList           []string
-		baseFolder         string
-		isFolder, inFolder bool
+		err        error
+		fileList   []string
+		baseFolder string
+		inFolder   bool
 	)
 
-	baseTpl := files[0]
+	tplName := templates[0]
 	rfFunc := readFiler(t, t.fSys)
-	if isFolder = t.isFolder(baseTpl); isFolder {
-		baseFolder = filepath.Join(t.root, baseTpl)
-		baseTpl = filepath.Join(baseTpl, baseTpl)
-	} else {
-		baseFolder, inFolder = t.isInFolder(baseTpl)
-	}
+	baseFolder, inFolder = t.isInFolder(tplName)
 
-	if isFolder || inFolder {
-		blockFiles, err := t.findFiles(baseFolder, t.ext)
+	if inFolder {
+		fileList, err = t.listFolderFiles(tplName, baseFolder)
 		if err != nil {
 			return nil, err
 		}
-		t.sortFolderFiles(baseTpl, blockFiles)
-
-		fileList = append([]string{}, blockFiles...)
-		if len(files) > 1 {
-			fileList = append(fileList, files[1:]...)
-		}
-
-		layout, err := t.extractLayout(fileList[0])
-		if err != nil && !errors.Is(err, ErrLayoutNotFound) {
-			return nil, err
-		}
-
-		if layout != "" {
-			temp := []string{layout}
-			temp = append(temp, fileList...)
-			fileList = temp
-		}
-
 	} else {
-		i := 0
-		for i < len(files) {
-			fileName := files[i]
-			layout, err := t.extractLayout(fileName)
-			if err == nil && !inFrontOf(files, i, t.cleanTemplateName(layout)) {
-				files = slices.Insert(files, i, t.cleanTemplateName(layout))
-				continue
-			}
-
-			fileList = append(fileList, t.absTemplateName(fileName))
-			i++
-		}
+		fileList = t.listFiles(templates)
 	}
 
+	var tpl *template.Template
+
 	// parse templates
-	tpl, err := t.parseFiles(nil, rfFunc, fileList...)
+	tpl, err = t.parseFiles(nil, rfFunc, fileList...)
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +115,58 @@ func (t *Template) parse(files ...string) (*template.Template, error) {
 	}
 
 	return tpl, nil
+}
+
+func (t *Template) listFiles(files []string) []string {
+	var fileList []string
+
+	i := 0
+	for i < len(files) {
+		fileName := files[i]
+		layout, err := t.extractLayout(fileName)
+		if err == nil && !inFrontOf(files, i, t.cleanTemplateName(layout)) {
+			files = slices.Insert(files, i, t.cleanTemplateName(layout))
+			continue
+		}
+
+		fileList = append(fileList, t.absTemplateName(fileName))
+		i++
+	}
+
+	return fileList
+}
+
+// listFolderFiles returns a list of files in the shared in baseFolder with baseTpl and its parent at the beginning
+// of the slice
+func (t *Template) listFolderFiles(baseTpl, baseFolder string) ([]string, error) {
+	var (
+		fileList   []string
+		blockFiles []string
+		err        error
+	)
+
+	// get files in the shared subfolder if it exists
+	sharedSubFolder := filepath.Join(baseFolder, "shared")
+	if t.isFolder(sharedSubFolder) {
+		blockFiles, err = t.findFiles(sharedSubFolder, t.ext)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	absBaseTpl := t.absTemplateName(baseTpl)
+	fileList = append([]string{absBaseTpl}, blockFiles...)
+
+	layout, err := t.extractLayout(baseTpl)
+	if err != nil && !errors.Is(err, ErrLayoutNotFound) {
+		return nil, err
+	}
+
+	if layout != "" {
+		fileList = append([]string{layout}, fileList...)
+	}
+
+	return fileList, nil
 }
 
 var extendsRe = regexp.MustCompile(`{{/\*\s*extends?\s*"(.*)"\s*\*/}}`)
