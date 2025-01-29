@@ -81,27 +81,24 @@ func readFiler(t *Template, fSys fs.FS) readFileFunc {
 
 func (t *Template) parse(templates ...string) (*template.Template, error) {
 	var (
-		err        error
-		fileList   []string
-		baseFolder string
-		inFolder   bool
+		err      error
+		fileList []string
 	)
 
-	tplName := templates[0]
 	rfFunc := readFiler(t, t.fSys)
-	baseFolder, inFolder = t.isInFolder(tplName)
-
-	if inFolder {
-		fileList, err = t.listFolderFiles(tplName, baseFolder)
+	for i := 0; i < len(templates); i++ {
+		tplName := templates[0]
+		fls, err := t.getRelatedFiles(tplName)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		fileList = t.listFiles(templates)
+
+		fileList = append(fileList, fls...)
 	}
 
-	var tpl *template.Template
+	fileList = t.includeLayouts(fileList)
 
+	var tpl *template.Template
 	// parse templates
 	tpl, err = t.parseFiles(nil, rfFunc, fileList...)
 	if err != nil {
@@ -117,7 +114,7 @@ func (t *Template) parse(templates ...string) (*template.Template, error) {
 	return tpl, nil
 }
 
-func (t *Template) listFiles(files []string) []string {
+func (t *Template) includeLayouts(files []string) []string {
 	var fileList []string
 
 	i := 0
@@ -136,39 +133,27 @@ func (t *Template) listFiles(files []string) []string {
 	return fileList
 }
 
-// listFolderFiles returns a list of files in the shared in baseFolder with baseTpl and its parent at the beginning
-// of the slice
-func (t *Template) listFolderFiles(baseTpl, baseFolder string) ([]string, error) {
+func (t *Template) getRelatedFiles(tpl string) ([]string, error) {
 	var (
 		fileList []string
 	)
 
-	absBaseTpl := t.absTemplateName(baseTpl)
-	fileList = t.listFiles([]string{absBaseTpl})
+	absTpl := t.absTemplateName(tpl)
+	fileList = append(fileList, absTpl)
 
-	i := -1
-	fleCount := len(fileList)
-	for i < fleCount {
-		i++
-		if i >= fleCount {
-			break
-		}
+	refs, err := t.findTemplateRefs(absTpl)
+	if err != nil {
+		return nil, err
+	}
 
-		fle := fileList[i]
-		refs, err := t.findTemplateRefs(fle)
-		if err != nil {
-			return nil, err
-		}
+	if len(refs) > 0 {
+		// remove references to templates not in this folder
+		refs = slices.DeleteFunc(refs, func(s string) bool {
+			return !t.pathExists(t.absTemplateName(s))
+		})
 
-		if len(refs) > 0 {
-			// remove references to templates not in this folder
-			refs = slices.DeleteFunc(refs, func(s string) bool {
-				return !strings.HasPrefix(s, t.cleanTemplateName(baseFolder))
-			})
-
-			for _, ref := range refs {
-				fileList = append(fileList, t.absTemplateName(ref))
-			}
+		for _, ref := range refs {
+			fileList = append(fileList, t.absTemplateName(ref))
 		}
 	}
 
