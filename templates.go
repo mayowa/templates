@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -110,6 +111,15 @@ func (t *Template) RenderFiles(out io.Writer, data any, templates ...string) err
 	}
 
 	if !found {
+		// expand the first entry in templates if it includes multiple files
+		tParts := strings.Split(templates[0], "|")
+		if len(tParts) > 0 {
+			tParts = slices.DeleteFunc(tParts, func(s string) bool {
+				return s == ""
+			})
+			templates = append(tParts, templates[1:]...)
+		}
+
 		tpl, err = t.parse(templates...)
 		if err != nil {
 			return err
