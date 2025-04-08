@@ -48,7 +48,7 @@ func Test_templateCache(t *testing.T) {
 	d := struct{ Name string }{Name: "philippta"}
 	err = tpl.Render(buff, "", "profile", d)
 	require.NoError(t, err)
-	assert.Contains(t, tpl.cache, "profile")
+	assert.Contains(t, tpl.cache, "noLayout-profile")
 
 	tpl, err = New("./testData", options)
 	require.NoError(t, err)
@@ -56,7 +56,7 @@ func Test_templateCache(t *testing.T) {
 	tpl.Debug = true
 	err = tpl.Render(buff, "", "profile", d)
 	require.NoError(t, err)
-	assert.Contains(t, tpl.cache, "profile")
+	assert.Contains(t, tpl.cache, "noLayout-profile")
 }
 
 func Test__noTemplate(t *testing.T) {
