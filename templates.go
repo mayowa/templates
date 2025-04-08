@@ -3,6 +3,7 @@ package templates
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
@@ -85,23 +86,28 @@ func (t *Template) init() error {
 }
 
 func (t *Template) Render(out io.Writer, layout, name string, data any) error {
-	return t.RenderFiles(out, "", data, name)
+	return t.RenderFiles(out, layout, name, data)
 }
 
 var ErrNoTemplates = errors.New("no templates")
 
-func (t *Template) RenderFiles(out io.Writer, layout string, data any, templates ...string) error {
+func (t *Template) RenderFiles(out io.Writer, layout, name string, data any, others ...string) error {
 	var (
 		err   error
 		found bool
 		tpl   *template.Template
 	)
 
-	if len(templates) == 0 && layout == "" {
+	if layout == "" && name == "" {
 		return ErrNoTemplates
 	}
 
-	baseTpl := layout
+	var templates []string
+
+	baseTpl := fmt.Sprint("noLayout", "-", name)
+	if layout != "" {
+		baseTpl = fmt.Sprint(layout, "-", name)
+	}
 
 	if !t.Debug {
 		t.mtx.RLock()
@@ -110,6 +116,8 @@ func (t *Template) RenderFiles(out io.Writer, layout string, data any, templates
 	}
 
 	if !found {
+		templates = append([]string{name}, others...)
+
 		// put layout first if provided
 		if layout != "" {
 			templates = append([]string{layout}, templates...)
