@@ -30,7 +30,7 @@ func TestNewTemplates(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "profile", d)
+	err = tpl.Render(buff, "", "profile", d)
 	require.NoError(t, err)
 	assert.Equal(t,
 		"cast layout\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
@@ -46,7 +46,7 @@ func Test_templateCache(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "profile", d)
+	err = tpl.Render(buff, "", "profile", d)
 	require.NoError(t, err)
 	assert.Contains(t, tpl.cache, "profile")
 
@@ -54,7 +54,7 @@ func Test_templateCache(t *testing.T) {
 	require.NoError(t, err)
 
 	tpl.Debug = true
-	err = tpl.Render(buff, "profile", d)
+	err = tpl.Render(buff, "", "profile", d)
 	require.NoError(t, err)
 	assert.Contains(t, tpl.cache, "profile")
 }
@@ -66,7 +66,7 @@ func Test__noTemplate(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "info", d)
+	err = tpl.Render(buff, "", "info", d)
 	require.NoError(t, err)
 
 	require.NoError(t, err)
@@ -82,7 +82,7 @@ func Test__nestedExtends(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 
-	err = tpl.Render(buff, "child", nil)
+	err = tpl.Render(buff, "", "child", nil)
 
 	require.NoError(t, err)
 	assert.Equal(t,
@@ -140,7 +140,7 @@ func TestTemplate_Lookup(t *testing.T) {
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
-	err = tpl.Render(buff, "inFolder/index", nil)
+	err = tpl.Render(buff, "", "inFolder/index", nil)
 	require.NoError(t, err)
 	assert.True(t, tpl.Exists("inFolder/index"))
 }
@@ -153,7 +153,7 @@ func TestTemplate_NoShared(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "solo", d)
+	err = tpl.Render(buff, "", "solo", d)
 	require.NoError(t, err)
 	assert.Equal(t, "philippta, This is solo act!", buff.String())
 }
@@ -163,7 +163,7 @@ func Test_Components(t *testing.T) {
 	require.NoError(t, err)
 
 	buff := bytes.NewBuffer(nil)
-	err = tpl.Render(buff, "comp-demo", nil)
+	err = tpl.Render(buff, "", "comp-demo", nil)
 	require.NoError(t, err)
 	assert.Equal(t, buff.String(), "<div>\n    \n    <div class=\"isCard\">\n\t<h1>this cards title</h1>\n\t<p>its a brand new day</p>\n    <div class=\"isCard\">\n\t<h1>a that is self enclosed and nested</h1>\n</div>\n\t<h2>Another one?</h2>\n    <div class=\"isCard\">\n\t<h1>nested dolls...</h1>\n\there we come.... wait are we russian??\n    \n</div>\n    \n</div>\n</div>")
 }
@@ -177,7 +177,7 @@ func Test_ComponentRenderer(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	err = tpl.Render(buff, "comp-renderer", nil)
+	err = tpl.Render(buff, "", "comp-renderer", nil)
 	require.NoError(t, err)
 	output := buff.String()
 	t.Log(output)
@@ -206,7 +206,7 @@ func Test_ComplexComponentParams(t *testing.T) {
 		"Select": opts,
 	}
 
-	err = tpl.Render(buff, "complex-params", data)
+	err = tpl.Render(buff, "", "complex-params", data)
 	require.NoError(t, err)
 	output := buff.String()
 	t.Log(output)
@@ -222,7 +222,7 @@ func Test__PassParamsToEnd(t *testing.T) {
 	data := map[string]string{
 		"name": "Paul",
 	}
-	err = tpl.Render(buff, "p-to-end", data)
+	err = tpl.Render(buff, "", "p-to-end", data)
 	require.NoError(t, err)
 	output := buff.String()
 
@@ -238,7 +238,7 @@ func Test__NestedComponents(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	err = tpl.Render(buff, "comp-dialog", nil)
+	err = tpl.Render(buff, "", "comp-dialog", nil)
 	require.NoError(t, err)
 	output := buff.String()
 	t.Log(output)
@@ -264,7 +264,7 @@ func Test__InFolder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buff.Reset()
-			err = tpl.Render(buff, tt.tplName, nil)
+			err = tpl.Render(buff, "", tt.tplName, nil)
 			require.NoError(t, err)
 			output := buff.String()
 			assert.Equal(t, tt.expected, output)
@@ -283,7 +283,7 @@ func Test_MultiNamedTemplates(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "cast|multi", d)
+	err = tpl.Render(buff, "", "cast|multi", d)
 	require.NoError(t, err)
 	assert.Equal(t,
 		"cast layout\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
