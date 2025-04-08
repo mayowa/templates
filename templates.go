@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
-	"slices"
 	"strings"
 	"sync"
 )
@@ -85,24 +84,24 @@ func (t *Template) init() error {
 	return nil
 }
 
-func (t *Template) Render(out io.Writer, name string, data any) error {
-	return t.RenderFiles(out, data, name)
+func (t *Template) Render(out io.Writer, layout, name string, data any) error {
+	return t.RenderFiles(out, "", data, name)
 }
 
 var ErrNoTemplates = errors.New("no templates")
 
-func (t *Template) RenderFiles(out io.Writer, data any, templates ...string) error {
+func (t *Template) RenderFiles(out io.Writer, layout string, data any, templates ...string) error {
 	var (
 		err   error
 		found bool
 		tpl   *template.Template
 	)
 
-	if len(templates) == 0 {
+	if len(templates) == 0 && layout == "" {
 		return ErrNoTemplates
 	}
 
-	baseTpl := templates[0]
+	baseTpl := layout
 
 	if !t.Debug {
 		t.mtx.RLock()
@@ -111,15 +110,12 @@ func (t *Template) RenderFiles(out io.Writer, data any, templates ...string) err
 	}
 
 	if !found {
-		// expand the first entry in templates if it includes multiple files
-		tParts := strings.Split(templates[0], "|")
-		if len(tParts) > 0 {
-			tParts = slices.DeleteFunc(tParts, func(s string) bool {
-				return s == ""
-			})
-			templates = append(tParts, templates[1:]...)
+		// put layout first if provided
+		if layout != "" {
+			templates = append([]string{layout}, templates...)
 		}
 
+		// expand the first entry in templates if it includes multiple files
 		tpl, err = t.parse(templates...)
 		if err != nil {
 			return err
