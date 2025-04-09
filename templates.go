@@ -85,13 +85,21 @@ func (t *Template) init() error {
 	return nil
 }
 
-func (t *Template) Render(out io.Writer, layout, name string, data any) error {
-	return t.RenderFiles(out, layout, name, data)
+type RenderOption struct {
+	Layout       string
+	Template     string
+	RenderString bool
+	Others       []string
+	Data         any
+}
+
+func (t *Template) Render(out io.Writer, option RenderOption) error {
+	return t.renderFiles(out, option.Layout, option.Template, option.Data, option.Others)
 }
 
 var ErrNoTemplates = errors.New("no templates")
 
-func (t *Template) RenderFiles(out io.Writer, layout, name string, data any, others ...string) error {
+func (t *Template) renderFiles(out io.Writer, layout, name string, data any, others []string) error {
 	var (
 		err   error
 		found bool
