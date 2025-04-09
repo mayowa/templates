@@ -273,8 +273,7 @@ func Test__InFolder(t *testing.T) {
 	}
 }
 
-func Test_MultiNamedTemplates(t *testing.T) {
-
+func Test_SpecifyDyanmicLayout(t *testing.T) {
 	tpl, err := New("./testData", options)
 	require.NoError(t, err)
 	assert.Equal(t, tpl.root, "./testData")
@@ -283,11 +282,10 @@ func Test_MultiNamedTemplates(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, "", "cast|multi", d)
+	err = tpl.Render(buff, "cast", "multi", d)
 	require.NoError(t, err)
 	assert.Equal(t,
 		"cast layout\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
 		buff.String(),
 	)
-
 }
