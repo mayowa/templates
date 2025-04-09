@@ -142,7 +142,7 @@ func TestTemplate_Lookup(t *testing.T) {
 	buff := bytes.NewBuffer(nil)
 	err = tpl.Render(buff, "", "inFolder/index", nil)
 	require.NoError(t, err)
-	assert.True(t, tpl.Exists("inFolder/index"))
+	assert.True(t, tpl.Exists("", "inFolder/index"))
 }
 
 func TestTemplate_NoShared(t *testing.T) {

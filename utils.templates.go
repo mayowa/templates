@@ -8,13 +8,18 @@ import (
 	"strings"
 )
 
-func (t *Template) Exists(name string) bool {
+func (t *Template) Exists(layout, name string) bool {
 	var (
 		found bool
 	)
 
+	lookupName := fmt.Sprint("noLayout", "-", name)
+	if layout != "" {
+		lookupName = fmt.Sprint(layout, "-", name)
+	}
+
 	t.mtx.RLock()
-	_, found = t.cache[name]
+	_, found = t.cache[lookupName]
 	t.mtx.RUnlock()
 
 	return found
