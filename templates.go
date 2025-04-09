@@ -180,7 +180,3 @@ func (t *Template) String(layout, src string, data any) (string, error) {
 
 	return out.String(), nil
 }
-
-func (t *Template) getLayout() string {
-	return ""
-}
