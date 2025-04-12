@@ -87,7 +87,7 @@ func (t *Template) parse(templates ...string) (*template.Template, error) {
 
 	rfFunc := readFiler(t, t.fSys)
 	for i := 0; i < len(templates); i++ {
-		tplName := templates[0]
+		tplName := templates[i]
 		fls, err := t.getRelatedFiles(tplName)
 		if err != nil {
 			return nil, err
