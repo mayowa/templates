@@ -30,7 +30,7 @@ func parseFiles(tpl *template.Template, readFile readFileFunc, funcMap template.
 		}
 
 		if err := processComponents(&b); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error processing component %s : %w", name, err)
 		}
 
 		s := string(b)
