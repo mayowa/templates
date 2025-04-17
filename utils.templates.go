@@ -80,44 +80,6 @@ func (t *Template) stripFileName(name string) string {
 	return name
 }
 
-func (t *Template) sortBlockFiles(blockName string, files []string) {
-	// put the file with the same name as the block first
-	idx := -1
-	for i, fle := range files {
-		fle, _ = filepath.Abs(fle)
-		fle = strings.TrimSuffix(fle, t.ext)
-		fle = filepath.Base(fle)
-		if fle == blockName {
-			idx = i
-			break
-		}
-	}
-
-	if idx == -1 {
-		return
-	}
-	files[0], files[idx] = files[idx], files[0]
-}
-
-func (t *Template) sortFolderFiles(blockName string, files []string) {
-	blockName = t.absTemplateName(blockName)
-	// put the file with the same name as the block first
-	idx := -1
-	for i, fle := range files {
-		if fle == blockName {
-			idx = i
-			break
-		}
-	}
-
-	lastPos := len(files) - 1
-	if idx == -1 || idx == lastPos {
-		return
-	}
-
-	files[lastPos], files[idx] = files[idx], files[lastPos]
-}
-
 // findFiles
 func (t *Template) findFiles(root, ext string) (filenames []string, err error) {
 
