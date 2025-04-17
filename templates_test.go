@@ -144,7 +144,7 @@ func TestTemplate_Lookup(t *testing.T) {
 	err = tpl.Render(buff, RenderOption{Layout: "", Template: "inFolder/index", Data: nil})
 
 	require.NoError(t, err)
-	assert.True(t, tpl.Exists("", "inFolder/index"))
+	assert.True(t, tpl.InCache("", "inFolder/index"))
 }
 
 func TestTemplate_NoShared(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (t *Template) Exists(layout, name string) bool {
+func (t *Template) InCache(layout, name string) bool {
 	var (
 		found bool
 	)
