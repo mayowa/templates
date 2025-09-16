@@ -153,7 +153,12 @@ func (t *Template) getRelatedFiles(tpl string) ([]string, error) {
 		})
 
 		for _, ref := range refs {
-			fileList = append(fileList, t.absTemplateName(ref))
+			newTpl := t.absTemplateName(ref)
+			if slices.Contains(fileList, newTpl) {
+				continue
+			}
+
+			fileList = append(fileList, newTpl)
 		}
 	}
 

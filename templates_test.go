@@ -21,42 +21,105 @@ var options = &TemplateOptions{
 }
 
 func TestNewTemplates(t *testing.T) {
+	opt := *options
 
-	tpl, err := New("./testData", options)
-	require.NoError(t, err)
-	assert.Equal(t, tpl.root, "./testData")
-	assert.Equal(t, ".tmpl", tpl.ext)
-	assert.Equal(t, "testData/shared", tpl.sharedFolder)
+	t.Run("single renderer", func(t *testing.T) {
+		tpl, err := New("./testData", &opt)
+		require.NoError(t, err)
+		assert.Equal(t, tpl.root, "./testData")
+		assert.Equal(t, ".tmpl", tpl.ext)
+		assert.Equal(t, "testData/shared", tpl.sharedFolder)
 
-	buff := bytes.NewBuffer(nil)
-	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, RenderOption{Layout: "", Template: "profile", Data: d})
-	require.NoError(t, err)
-	assert.Equal(t,
-		"cast layout\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
-		buff.String(),
-	)
+		buff := bytes.NewBuffer(nil)
+		d := struct{ Name string }{Name: "philippta"}
+		err = tpl.Render(buff, RenderOption{Layout: "", Template: "profile", Data: d})
+		require.NoError(t, err)
+		assert.Equal(t,
+			"cast layout\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
+			buff.String(),
+		)
+	})
+
+	testCases := []struct {
+		name  string
+		debug bool
+	}{
+		{name: "multi renderer: debug", debug: true},
+		{name: "multi renderer: prod", debug: false},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			opt.Debug = tc.debug
+			tpl2, err := New("./testData", &opt)
+			require.NoError(t, err)
+
+			var buff1, buff2 bytes.Buffer
+			d := struct{ Name string }{Name: "philippta"}
+			start := make(chan bool)
+			end := make(chan bool)
+
+			var err1, err2 error
+			go func() {
+				<-start
+				err1 = tpl2.Render(&buff1, RenderOption{Layout: "", Template: "profile", Data: d})
+				end <- true
+			}()
+
+			go func() {
+				<-start
+				err2 = tpl2.Render(&buff2, RenderOption{Layout: "", Template: "profile", Data: d})
+				end <- true
+			}()
+
+			// start both
+			close(start)
+
+			<-end
+			<-end
+
+			assert.NoError(t, err1)
+			assert.NoError(t, err2)
+
+			assert.Equal(t, buff1.String(), buff2.String())
+			assert.Equal(t,
+				"cast layout\n<div class=\"profile\">\n  Your username: PHILIPPTA\n</div>\n",
+				buff1.String(),
+			)
+		})
+	}
 
 }
 
 func Test_templateCache(t *testing.T) {
 
-	tpl, err := New("./testData", options)
-	require.NoError(t, err)
-
-	buff := bytes.NewBuffer(nil)
 	d := struct{ Name string }{Name: "philippta"}
-	err = tpl.Render(buff, RenderOption{Layout: "", Template: "profile", Data: d})
-	require.NoError(t, err)
-	assert.Contains(t, tpl.cache, "noLayout-profile")
 
-	tpl, err = New("./testData", options)
-	require.NoError(t, err)
+	t.Run("cache check in production", func(t *testing.T) {
+		tpl, err := New("./testData", options)
+		require.NoError(t, err)
 
-	tpl.Debug = true
-	err = tpl.Render(buff, RenderOption{Layout: "", Template: "profile", Data: d})
-	require.NoError(t, err)
-	assert.Contains(t, tpl.cache, "noLayout-profile")
+		buff := bytes.NewBuffer(nil)
+		err = tpl.Render(buff, RenderOption{Layout: "", Template: "profile", Data: d})
+		require.NoError(t, err)
+		assert.Contains(t, tpl.cache, "noLayout-profile")
+
+	})
+
+	t.Run("cache check in debug", func(t *testing.T) {
+		tpl, err := New("./testData", options)
+		require.NoError(t, err)
+
+		opt := *options
+		opt.Debug = true
+		tpl, err = New("./testData", &opt)
+		require.NoError(t, err)
+
+		buff := bytes.NewBuffer(nil)
+		err = tpl.Render(buff, RenderOption{Layout: "", Template: "profile", Data: d})
+		require.NoError(t, err)
+		assert.Equal(t, 0, len(tpl.cache), "cache should be empty")
+	})
+
 }
 
 func Test__noTemplate(t *testing.T) {

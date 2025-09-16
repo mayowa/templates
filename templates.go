@@ -19,8 +19,9 @@ type Template struct {
 	FuncMap      template.FuncMap
 
 	cache              map[string]*template.Template
+	parsing            map[string]*sync.Mutex
 	mtx                sync.RWMutex
-	Debug              bool
+	debug              bool
 	fSys               fs.FS
 	componentFolder    string
 	componentTemplates *template.Template
@@ -31,13 +32,13 @@ type TemplateOptions struct {
 	FuncMap   template.FuncMap
 	PathToSVG string
 	FS        fs.FS
+	Debug     bool
 }
 
 func New(root string, options *TemplateOptions) (*Template, error) {
 	var err error
 	t := new(Template)
 	t.root = root
-
 	if options == nil {
 		options = &TemplateOptions{
 			Ext:       ".tmpl",
@@ -47,6 +48,7 @@ func New(root string, options *TemplateOptions) (*Template, error) {
 	}
 
 	t.fSys = options.FS
+	t.debug = options.Debug
 
 	// default to .tmpl when none is provided
 	if options.Ext == "" {
@@ -59,6 +61,7 @@ func New(root string, options *TemplateOptions) (*Template, error) {
 	}
 
 	t.cache = make(map[string]*template.Template)
+	t.parsing = make(map[string]*sync.Mutex)
 
 	t.sharedFolder = filepath.Join(t.root, "shared")
 	if err = t.init(); err != nil {
@@ -117,30 +120,46 @@ func (t *Template) renderFiles(out io.Writer, layout, name string, data any, oth
 		baseTpl = fmt.Sprint(layout, "-", name)
 	}
 
-	if !t.Debug {
+	var parseLock *sync.Mutex
+	var plFound bool
+	t.mtx.Lock()
+	parseLock, plFound = t.parsing[baseTpl]
+	if !plFound {
+		t.parsing[baseTpl] = &sync.Mutex{}
+		parseLock = t.parsing[baseTpl]
+	}
+	t.mtx.Unlock()
+
+	parseLock.Lock()
+	if !t.debug {
 		t.mtx.RLock()
 		tpl, found = t.cache[baseTpl]
 		t.mtx.RUnlock()
 	}
 
 	if !found {
+		// put layout first if provided
+		// expand the first entry in templates if it includes multiple files
 		templates = append([]string{name}, others...)
 
-		// put layout first if provided
 		if layout != "" {
 			templates = append([]string{layout}, templates...)
 		}
 
-		// expand the first entry in templates if it includes multiple files
 		tpl, err = t.parse(templates...)
 		if err != nil {
+			parseLock.Unlock()
 			return err
 		}
 
-		t.mtx.Lock()
-		t.cache[baseTpl] = tpl
-		t.mtx.Unlock()
+		if !t.debug {
+			t.mtx.Lock()
+			t.cache[baseTpl] = tpl
+			t.mtx.Unlock()
+		}
+
 	}
+	parseLock.Unlock()
 
 	return tpl.Execute(out, data)
 }
